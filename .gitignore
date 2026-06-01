@@ -17,6 +17,10 @@ venv/
 ._*
 .claude/
 
+# Local planning/audit notes
+WEB_DEMO_IMPROVEMENT_TODO.md
+WEB_DEMO_VOLUME_AUDIT.md
+
 # Logs
 *.log
 npm-debug.log*
