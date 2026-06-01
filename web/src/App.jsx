@@ -156,7 +156,10 @@ export default function App() {
     <div className="app">
       <div className="page-inner">
         <header className="app-header">
-          <div className="seal">格物致知</div>
+          <div className="seal" aria-label="格物致知">
+            <span>格</span><span>物</span>
+            <span>致</span><span>知</span>
+          </div>
           <h1 className="book-title">格物</h1>
           <div className="book-sub">大模型卷 · {volume.name}</div>
         </header>
