@@ -156,6 +156,11 @@ export default function App() {
     <div className="app">
       <div className="page-inner">
         <header className="app-header">
+          <a className="repo-star" href="https://github.com/OpenRaiser/Gewu"
+            target="_blank" rel="noreferrer" aria-label="在 GitHub 上 Star Gewu">
+            <span className="repo-star-icon">★</span>
+            <span>Star</span>
+          </a>
           <div className="seal" aria-label="格物致知">
             <span>格</span><span>物</span>
             <span>致</span><span>知</span>
