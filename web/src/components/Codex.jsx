@@ -113,7 +113,7 @@ export default function Codex({ demo, tabs }) {
           </div>
         </div>
         <p className="tip-banner">
-          研习无须按序 · 改一字而万象随之而动 · 此谓「实时映射」之妙
+          研习无须按序 · 改一字而万象随之而动 · 此谓「悬镜即形」之妙
         </p>
       </div>
 
