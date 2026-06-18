@@ -385,6 +385,30 @@ html, body {
   font-size: 15px;
 }
 .scroll-intro b { color: var(--cinnabar); font-weight: 600; }
+.scroll-intro p { margin: 0 0 10px; }
+.scroll-intro p:last-child { margin-bottom: 0; }
+.scroll-intro code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  background: rgba(158, 43, 30, 0.08);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.scroll-intro ol.intro-qa {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+.scroll-intro ol.intro-qa li { margin-bottom: 7px; line-height: 1.6; }
+.scroll-intro ol.intro-qa i {
+  color: var(--cinnabar);
+  font-style: normal;
+  font-weight: 600;
+}
+.scroll-intro .intro-arena-tip {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  opacity: 0.85;
+}
 
 .bridge-panel {
   display: grid;

@@ -31,7 +31,35 @@
 - 能实现或读懂一个最小 agent loop。
 - 能说清楚 agent 什么时候应该继续，什么时候应该停止。
 
-## Phase 02: Feedback-Driven Single Agent
+## Phase 02: Tool Use
+
+目标：理解工具调用如何从模型 action 变成可靠、可校验、可恢复的外部执行。
+
+需要掌握：
+
+- tool schema
+- tool selection
+- argument validation
+- structured observation
+- error recovery
+- output truncation
+
+必读论文：
+
+- MRKL Systems: A modular, neuro-symbolic architecture that combines large language models, external knowledge sources and discrete reasoning  
+  https://arxiv.org/abs/2205.00445
+- Toolformer: Language Models Can Teach Themselves to Use Tools  
+  https://arxiv.org/abs/2302.04761
+
+阶段完成标准：
+
+- 能解释为什么工具要模块化。
+- 能说明 LLM 在工具系统中更像决策器，而不是执行器。
+- 能定义一个最小 tool schema。
+- 能解释参数校验和结构化 observation 的必要性。
+- 能在 minimal harness 中看懂 schema -> validation -> execution -> observation 的路径。
+
+## Phase 03: Feedback-Driven Single Agent
 
 必读论文：
 
@@ -42,7 +70,7 @@
 - Language Agent Tree Search Unifies Reasoning Acting and Planning in Language Models  
   https://arxiv.org/abs/2310.04406
 
-## Phase 03: Memory / Long-Term State / Environment
+## Phase 04: Memory / Long-Term State / Environment
 
 必读论文：
 
@@ -51,7 +79,7 @@
 - Voyager: An Open-Ended Embodied Agent with Large Language Models  
   https://arxiv.org/abs/2305.16291
 
-## Phase 04: Sub-Agent / Manager-Worker
+## Phase 05: Sub-Agent / Manager-Worker
 
 必读论文：
 
@@ -64,7 +92,7 @@
 - CAMEL: Communicative Agents for "Mind" Exploration of Large Language Model Society  
   https://arxiv.org/abs/2303.17760
 
-## Phase 05: Evaluator / Critic / Verifier
+## Phase 06: Evaluator / Critic / Verifier
 
 必读论文：
 
@@ -75,7 +103,7 @@
 - Surveying Collaboration, Failure Attribution, and Self-Evolution in LLM-based Multi-Agent Systems  
   https://arxiv.org/abs/2605.14892
 
-## Phase 06: Ablation / Baseline
+## Phase 07: Ablation / Baseline
 
 必读论文：
 
@@ -86,7 +114,7 @@
 - Cut the Crap: An Economical Communication Pipeline for LLM-based Multi-Agent Systems  
   https://arxiv.org/abs/2410.02506
 
-## Phase 07: Benchmarks
+## Phase 08: Benchmarks
 
 必读论文：
 
@@ -101,7 +129,7 @@
 - SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering  
   https://arxiv.org/abs/2405.15793
 
-## Phase 08: Framework Comparison
+## Phase 09: Framework Comparison
 
 必读论文：
 
@@ -112,7 +140,7 @@
 - A Communication-Centric Survey of LLM-Based Multi-Agent Systems  
   https://arxiv.org/abs/2502.14321
 
-## Phase 09: Protocol Layer
+## Phase 10: Protocol Layer
 
 必读论文：
 
@@ -120,4 +148,3 @@
   https://arxiv.org/abs/2505.02279
 - The Orchestration of Multi-Agent Systems: Architectures, Protocols, and Enterprise Adoption  
   https://arxiv.org/abs/2601.13671
-

@@ -36,6 +36,7 @@ import { quantizeDemo } from "./demos/quantize.jsx";
 import { ragDemo } from "./demos/rag.jsx";
 import { agentDemo } from "./demos/agent.jsx";
 import { agentHarnessDemo } from "./demos/agentHarness.jsx";
+import { toolUseDemo } from "./demos/toolUse.jsx";
 
 const LLM_VOLUMES = [
   {
@@ -151,6 +152,7 @@ const AGENT_VOLUMES = [
     name: "卷一 · Harness 起手",
     scrolls: [
       { id: "harness", label: "第一式 · 想做相生", demo: agentHarnessDemo },
+      { id: "tooluse", label: "第二式 · 立规执器", demo: toolUseDemo },
     ],
   },
 ];

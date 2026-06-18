@@ -10,18 +10,22 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from tools import run_tool
+from tools import format_tool_specs, run_tool
 
 
 ROOT = Path(__file__).resolve().parents[3]
 TRACE_PATH = Path(__file__).with_name("trace.jsonl")
 
 
-SYSTEM_PROMPT = """You are a minimal ReAct-style file-research agent.
+SYSTEM_PROMPT_PREFIX = """You are a minimal ReAct-style file-research agent.
 
 You can inspect only the local workspace through tools. Do not invent file contents.
 
-Available actions:
+Tool schemas:
+"""
+
+SYSTEM_PROMPT_SUFFIX = """
+Action format:
 - {"action":"list_files","args":{"path":"."},"reason":"short reason"}
 - {"action":"read_file","args":{"path":"relative/path.md"},"reason":"short reason"}
 - {"action":"search_text","args":{"pattern":"text","path":"."},"reason":"short reason"}
@@ -34,6 +38,10 @@ Rules:
 - Use final only when the task is answered with enough evidence.
 - If a tool fails, use the observation to recover or explain the blocker.
 """
+
+
+def build_system_prompt() -> str:
+    return SYSTEM_PROMPT_PREFIX + format_tool_specs() + SYSTEM_PROMPT_SUFFIX
 
 
 def _default_study_path() -> str:
@@ -138,7 +146,7 @@ def append_trace(event: dict[str, Any]) -> None:
 
 def run(task: str, max_steps: int, *, scripted_demo: bool = False) -> str:
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": build_system_prompt()},
         {"role": "user", "content": task},
     ]
     append_trace({"type": "task", "task": task, "workspace": str(ROOT)})
