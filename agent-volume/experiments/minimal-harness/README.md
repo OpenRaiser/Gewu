@@ -1,34 +1,56 @@
 # Minimal Harness 实验
 
-这个目录用于实现 Phase 01 的最小 single-agent harness。
+这个目录是 Agent 卷第一章的配套代码：用最少的代码跑通一个 ReAct-style single-agent harness。
 
-文件：
+本实验故意只保留文件工具，不引入 sub-agent、browser、database、MCP 或长期记忆。目标是先看清楚最小闭环：
 
 ```text
-agent.py
-tools.py
-trace.jsonl
+task -> model action -> harness executes tool -> observation -> next action -> final
+```
+
+## 文件
+
+```text
+agent.py       # agent loop、模型调用、动作解析、trace、停止条件
+tools.py       # 本地文件工具与 workspace 边界
+trace.jsonl    # 运行后生成；每行一个事件
 README.md
 ```
 
+## 工具
+
 第一版支持：
 
-- `read_file(path)`
 - `list_files(path)`
-- `search_text(pattern, path)`
+- `read_file(path, max_chars=12000)`
+- `search_text(pattern, path, max_matches=50)`
 - `final(answer)`
 
-第一版暂不引入：
+`final` 不是 Python 工具，而是模型输出的明确停止动作。
 
-- sub-agent
-- browser
-- database
-- MCP
-- long-term memory
+## 快速运行：无 API key 脚本演示
 
-目标是先跑通最小 ReAct loop。
+先用脚本模式理解 harness。这个模式不调用模型，但复用同一套 action 解析、工具执行、observation 回注和 trace 记录。
 
-## 运行方式
+```bash
+cd agent-volume/experiments/minimal-harness
+python3 agent.py "演示 Agent 卷第一章的最小 harness" --scripted-demo --reset-trace
+```
+
+运行后查看：
+
+```bash
+cat trace.jsonl
+```
+
+你应该能看到：
+
+1. `task`
+2. `model` 输出 JSON action
+3. `tool` 执行并返回 observation
+4. `final` 停止
+
+## 真实模型模式
 
 这个实验使用 OpenAI-compatible Chat Completions 接口。
 
@@ -36,20 +58,21 @@ README.md
 
 ```bash
 export OPENAI_API_KEY="..."
-export OPENAI_BASE_URL="https://api.openai.com/v1"  # 可选，兼容网关可改这里
-export OPENAI_MODEL="gpt-4.1-mini"                  # 可选
+export OPENAI_BASE_URL="https://api.openai.com/v1"  # 第三方兼容网关可改这里
+export OPENAI_MODEL="gpt-4.1-mini"                  # 按网关支持情况调整
 ```
 
 示例：
 
 ```bash
-python3 agent.py "读取 multi-agent-research.md，找出第 7 节中第一步推荐的论文，并总结每篇为什么属于 single-agent harness 基础。"
+cd agent-volume/experiments/minimal-harness
+python3 agent.py "读取 agent-volume/roadmap.md，找出 Phase 01 的目标、必读论文和完成标准，并用三段话总结。" --reset-trace
 ```
 
-运行后会生成或追加：
+如果在 `/Volumes/T7/multi-agent/learning` 的学习目录运行，对应任务可以写成：
 
-```text
-trace.jsonl
+```bash
+python3 agent.py "读取 learning/roadmap.md，找出 Phase 01 的目标、必读论文和完成标准，并用三段话总结。" --reset-trace
 ```
 
 ## 实现要点
@@ -59,3 +82,26 @@ trace.jsonl
 - 模型每轮必须输出一个 JSON action。
 - harness 执行工具后，把 observation 作为下一轮上下文回注给模型。
 - `--max-steps` 是硬停止条件，防止循环失控。
+- 重复相同 tool call 超过两次会被 harness 干预。
+- tool 失败、JSON 解析失败都被包装成 observation，让模型有机会恢复。
+
+## 第一章对应关系
+
+| 章节概念 | 代码位置 |
+|---|---|
+| Model | `call_model()` 或 `scripted_model_response()` |
+| Action | `parse_action()` 返回的 JSON 对象 |
+| Tool | `tools.py` 中的 `TOOLS` |
+| Observation | `run_tool()` 返回的 JSON 字符串 |
+| Trace | `append_trace()` 写入 `trace.jsonl` |
+| Stop condition | `final`、`--max-steps`、重复 tool call 检测 |
+
+## 推荐复盘问题
+
+跑完后不要只看最终答案，先读 `trace.jsonl`：
+
+- 模型第一步为什么选择这个工具？
+- observation 是否真的改变了下一步？
+- 如果工具失败，错误有没有回注给模型？
+- final 是因为证据足够，还是因为预算用尽？
+- 有没有重复 tool call 或无进展迹象？

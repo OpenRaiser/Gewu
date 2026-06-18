@@ -36,6 +36,49 @@ Rules:
 """
 
 
+def _default_study_path() -> str:
+    candidates = [
+        "agent-volume/roadmap.md",
+        "learning/roadmap.md",
+        "roadmap.md",
+        "README.md",
+    ]
+    for path in candidates:
+        if (ROOT / path).exists():
+            return path
+    return "."
+
+
+def scripted_model_response(step: int) -> str:
+    study_path = _default_study_path()
+    study_dir = str(Path(study_path).parent)
+    if study_dir == ".":
+        study_dir = "."
+    actions = [
+        {
+            "action": "read_file",
+            "args": {"path": study_path, "max_chars": 5000},
+            "reason": "先读取学习路线，获取 Phase 01 的上下文",
+        },
+        {
+            "action": "search_text",
+            "args": {"pattern": "Phase 01", "path": study_dir},
+            "reason": "再用搜索确认 Phase 01 在相关文档中的位置",
+        },
+        {
+            "action": "final",
+            "answer": (
+                "脚本演示完成：harness 先读取路线文件，再搜索 Phase 01，"
+                "最后在已有 observation 足够时输出 final。真实模型模式下，"
+                "这些 action 会由模型根据上下文动态决定。"
+            ),
+        },
+    ]
+    if step <= len(actions):
+        return json.dumps(actions[step - 1], ensure_ascii=False)
+    return json.dumps(actions[-1], ensure_ascii=False)
+
+
 def call_model(messages: list[dict[str, str]]) -> str:
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
@@ -93,7 +136,7 @@ def append_trace(event: dict[str, Any]) -> None:
         handle.write(json.dumps(event, ensure_ascii=False) + "\n")
 
 
-def run(task: str, max_steps: int) -> str:
+def run(task: str, max_steps: int, *, scripted_demo: bool = False) -> str:
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": task},
@@ -103,7 +146,7 @@ def run(task: str, max_steps: int) -> str:
     seen_tool_calls: dict[str, int] = {}
 
     for step in range(1, max_steps + 1):
-        raw = call_model(messages)
+        raw = scripted_model_response(step) if scripted_demo else call_model(messages)
         append_trace({"type": "model", "step": step, "raw": raw})
         print(f"\n[step {step}] model: {raw}")
 
@@ -150,10 +193,22 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run a minimal ReAct-style harness.")
     parser.add_argument("task", help="Task for the agent")
     parser.add_argument("--max-steps", type=int, default=8)
+    parser.add_argument(
+        "--scripted-demo",
+        action="store_true",
+        help="Use a deterministic scripted model so the harness can run without an API key.",
+    )
+    parser.add_argument(
+        "--reset-trace",
+        action="store_true",
+        help="Delete the previous trace.jsonl before running.",
+    )
     args = parser.parse_args()
 
     try:
-        answer = run(args.task, args.max_steps)
+        if args.reset_trace and TRACE_PATH.exists():
+            TRACE_PATH.unlink()
+        answer = run(args.task, args.max_steps, scripted_demo=args.scripted_demo)
     except Exception as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -165,4 +220,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

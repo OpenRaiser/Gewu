@@ -35,6 +35,7 @@ import { kvCacheDemo } from "./demos/kvCache.jsx";
 import { quantizeDemo } from "./demos/quantize.jsx";
 import { ragDemo } from "./demos/rag.jsx";
 import { agentDemo } from "./demos/agent.jsx";
+import { agentHarnessDemo } from "./demos/agentHarness.jsx";
 
 const LLM_VOLUMES = [
   {
@@ -144,9 +145,19 @@ const LLM_VOLUMES = [
   },
 ];
 
+const AGENT_VOLUMES = [
+  {
+    id: "agent-vol1",
+    name: "卷一 · Harness 起手",
+    scrolls: [
+      { id: "harness", label: "第一式 · 想做相生", demo: agentHarnessDemo },
+    ],
+  },
+];
+
 const BOOKS = [
   { id: "llm", title: "大模型卷", volumes: LLM_VOLUMES },
-  { id: "agent", title: "Agent 卷", volumes: [], empty: "Agent 卷演武场整理中" },
+  { id: "agent", title: "Agent 卷", volumes: AGENT_VOLUMES },
 ];
 
 export default function App() {
