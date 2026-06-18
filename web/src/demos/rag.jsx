@@ -135,5 +135,5 @@ export const ragDemo = {
     { t: "检索的核心", d: "<b>向量化 + 找最近邻</b>。本例用词袋向量 + 余弦相似度演示;真实 RAG 用神经网络<b>嵌入</b> + 向量数据库,但思想一模一样。" },
     { t: "为什么有用", d: "① 能用上模型<b>没学过</b>的新知识/私有文档;② 答案<b>有出处</b>,大幅减少幻觉。这就是「让 AI 读你的 PDF/知识库再问答」类产品的底层。" },
   ],
-  localCmd: "cd ch14-applications/code && python3 minimal_rag.py",
+  localCmd: "cd llm-volume/ch14-applications/code && python3 minimal_rag.py",
 };

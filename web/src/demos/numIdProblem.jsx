@@ -177,5 +177,5 @@ export const numIdDemo = {
     { t: "one-hot 的两个毛病", d: "① <b>两两等距</b>:任意两个不同词的距离都是 √2 ≈ 1.414,看不出谁更像谁;② <b>维度爆炸</b>:维度 = 词表大小,5 万词就是 5 万维,且几乎全是 0,极度浪费。" },
     { t: "我们到底想要什么", d: "一个<b>又短(几百维而非几万维)、又稠密(没有大片 0)、还能表达含义(意思近的词向量也近)</b>的向量。这就是下一式的 <b>Embedding(词嵌入)</b>。" },
   ],
-  localCmd: "cd ch05-embedding/code && python3 why_not_id.py",
+  localCmd: "cd llm-volume/ch05-embedding/code && python3 why_not_id.py",
 };

@@ -147,5 +147,5 @@ export const trainGptDemo = {
     { t: "loss 从 ln(vocab) 下降", d: "第 1 步 loss=4.503,正是<b>均匀瞎猜</b>水平(ln74≈4.30);100 步后降到 0.037——模型学会了语料规律。loss 曲线下降是「正在学习」的直接证据。" },
     { t: "过拟合(背下来)", d: "这里数据小、模型相对大,loss 降到接近 0 是因为模型把诗<b>背</b>下来了。真实训练用海量数据,loss 不会也不该这么低——那是死记硬背,不会举一反三。这里故意如此,好让效果一眼可见。" },
   ],
-  localCmd: "cd ch09-train-gpt/code && python3 train.py",
+  localCmd: "cd llm-volume/ch09-train-gpt/code && python3 train.py",
 };

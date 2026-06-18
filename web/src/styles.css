@@ -98,6 +98,32 @@ html, body {
   letter-spacing: 3px;
   margin-top: 6px;
 }
+.book-switch {
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 3px;
+  border: 1px solid rgba(107,58,46,0.35);
+  background: rgba(228,214,186,0.45);
+}
+.book-tab {
+  border: none;
+  background: transparent;
+  color: var(--ink-faint);
+  padding: 4px 12px;
+  font-family: var(--code-font);
+  font-size: 13px;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+.book-tab:hover {
+  color: var(--ink-soft);
+  background: rgba(63,107,79,0.07);
+}
+.book-tab.active {
+  color: var(--cinnabar);
+  background: var(--highlight);
+}
 .repo-star {
   position: absolute;
   top: 2px;
@@ -257,6 +283,36 @@ html, body {
   color: var(--cinnabar);
   border-left-color: var(--cinnabar);
   background: var(--highlight);
+}
+.vol-empty {
+  color: var(--ink-faint);
+  padding: 8px 10px;
+  font-family: var(--code-font);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.book-placeholder {
+  grid-column: span 2;
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: var(--ink-soft);
+  border-left: 1px solid var(--paper-edge);
+  padding: 24px;
+}
+.book-placeholder h2 {
+  margin: 0 0 10px;
+  font-family: var(--code-font);
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: var(--cinnabar);
+}
+.book-placeholder p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ink-faint);
 }
 
 /* ---------- 卷目(章节) ---------- */

@@ -132,5 +132,5 @@ export const agentDemo = {
     { t: "大脑就是 GPT", d: "「下一步干啥」真实里由 <b>GPT</b> 生成(本例用规则模拟以便稳定复现)。工具可以是计算器、搜索、代码执行、数据库查询……" },
     { t: "多步多工具协作", d: "「北京人口的 2 倍」要 Agent <b>先 lookup 查到人口、再 calculator 算乘法</b>——多步、多工具,这是单次问答<b>做不到</b>的。这正是函数调用、AI 助手帮你订票查天气的基本范式。" },
   ],
-  localCmd: "cd ch14-applications/code && python3 minimal_agent.py",
+  localCmd: "cd llm-volume/ch14-applications/code && python3 minimal_agent.py",
 };

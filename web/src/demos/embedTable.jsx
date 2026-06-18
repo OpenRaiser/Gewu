@@ -150,5 +150,5 @@ export const embedTableDemo = {
     { t: "查表 = 矩阵乘", d: "<b>E[i]</b>(按行号取)和 <b>one-hot @ E</b>(用第 i 个 one-hot 乘矩阵)<b>完全等价</b>。真实代码用索引(快得多),但理解成矩阵乘,就能看清 Embedding 是网络的一层。" },
     { t: "一句话 = 一叠向量", d: "一个句子是一串编号,查表后变成 <b>(句长 × D)</b> 的向量叠。这叠向量,才是真正喂进后续网络的输入。" },
   ],
-  localCmd: "cd ch05-embedding/code && python3 embedding_table.py",
+  localCmd: "cd llm-volume/ch05-embedding/code && python3 embedding_table.py",
 };

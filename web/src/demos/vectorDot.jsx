@@ -111,7 +111,7 @@ export const vectorDemo = {
     prev: ["Python 数组", "二维坐标"],
     current: ["逐位相乘", "乘积求和", "相似度雏形"],
     next: ["矩阵乘", "attention 中的 Q·K"],
-    sources: ["ch01-math/code/vectors.py"],
+    sources: ["llm-volume/ch01-math/code/vectors.py"],
   },
   lines, paramDefs, initial, compute, frames, Viz, note, pyCode,
 };

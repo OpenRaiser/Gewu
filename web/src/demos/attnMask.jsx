@@ -102,7 +102,7 @@ export const attnMaskDemo = {
     prev: ["ch06 Q/K/V 打分矩阵", "ch03/ch09 猜下一个字"],
     current: ["上三角未来屏蔽", "scores[future] = -∞", "softmax 后权重为 0"],
     next: ["GPT 自回归训练", "Transformer Block", "KV cache"],
-    sources: ["ch06-attention/code/causal_mask.py", "web/src/demos/ch06attn.js"],
+    sources: ["llm-volume/ch06-attention/code/causal_mask.py", "web/src/demos/ch06attn.js"],
   },
   lines, paramDefs, initial, compute, frames, Viz, note, pyCode, playMs: 1100,
   terms: [
@@ -111,5 +111,5 @@ export const attnMaskDemo = {
     { t: "自回归 (autoregressive)", d: "一个字一个字生成,每步只依赖已生成的内容。训练时用 mask 模拟这种「看不到未来」,推理时才能逐字往外吐。" },
     { t: "下三角矩阵", d: "<b>np.tril</b> 取下三角(含对角线)=可见区。第 i 行恰好可见前 i+1 个位置,完美对应「第 i 个词能看到前 i 个词」。" },
   ],
-  localCmd: "cd ch06-attention/code && python3 causal_mask.py",
+  localCmd: "cd llm-volume/ch06-attention/code && python3 causal_mask.py",
 };

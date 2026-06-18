@@ -36,7 +36,7 @@ import { quantizeDemo } from "./demos/quantize.jsx";
 import { ragDemo } from "./demos/rag.jsx";
 import { agentDemo } from "./demos/agent.jsx";
 
-const VOLUMES = [
+const LLM_VOLUMES = [
   {
     id: "vol1", name: "卷一 · 数理筑基",
     scrolls: [
@@ -144,13 +144,21 @@ const VOLUMES = [
   },
 ];
 
+const BOOKS = [
+  { id: "llm", title: "大模型卷", volumes: LLM_VOLUMES },
+  { id: "agent", title: "Agent 卷", volumes: [], empty: "Agent 卷演武场整理中" },
+];
+
 export default function App() {
+  const [bookIndex, setBookIndex] = useState(0);
   const [vol, setVol] = useState(0);
   const [active, setActive] = useState(0);
-  const volume = VOLUMES[vol];
-  const scroll = volume.scrolls[active];
+  const book = BOOKS[bookIndex];
+  const volume = book.volumes[vol];
+  const scroll = volume?.scrolls[active];
 
   const switchVol = (i) => { setVol(i); setActive(0); };
+  const switchBook = (i) => { setBookIndex(i); setVol(0); setActive(0); };
 
   return (
     <div className="app">
@@ -166,7 +174,18 @@ export default function App() {
             <span>致</span><span>知</span>
           </div>
           <h1 className="book-title">格物</h1>
-          <div className="book-sub">大模型卷 · {volume.name}</div>
+          <div className="book-sub">{book.title}{volume ? ` · ${volume.name}` : ""}</div>
+          <nav className="book-switch" aria-label="分卷">
+            {BOOKS.map((b, i) => (
+              <button
+                key={b.id}
+                className={"book-tab" + (i === bookIndex ? " active" : "")}
+                onClick={() => switchBook(i)}
+              >
+                {b.title}
+              </button>
+            ))}
+          </nav>
         </header>
 
         <div className="divider">— ❖ 拖动文中朱字 · 或以指掠过经文 · 演武场即时演化 ❖ —</div>
@@ -174,32 +193,41 @@ export default function App() {
         <div className="book-body">
           <nav className="vol-nav">
             <div className="vol-nav-title">目录</div>
-            {VOLUMES.map((v, i) => (
+            {book.volumes.length > 0 ? book.volumes.map((v, i) => (
               <button key={v.id}
                 className={"vol-tab" + (i === vol ? " active" : "")}
                 onClick={() => switchVol(i)}>
                 {v.name}
               </button>
-            ))}
+            )) : (
+              <div className="vol-empty">{book.empty}</div>
+            )}
           </nav>
 
-          <Codex
-            key={volume.id + "-" + scroll.id}
-            demo={scroll.demo}
-            tabs={
-              <nav className="scrolls">
-                {volume.scrolls.map((s, i) => (
-                  <button
-                    key={s.id}
-                    className={"scroll-tab" + (i === active ? " active" : "")}
-                    onClick={() => setActive(i)}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </nav>
-            }
-          />
+          {volume && scroll ? (
+            <Codex
+              key={book.id + "-" + volume.id + "-" + scroll.id}
+              demo={scroll.demo}
+              tabs={
+                <nav className="scrolls">
+                  {volume.scrolls.map((s, i) => (
+                    <button
+                      key={s.id}
+                      className={"scroll-tab" + (i === active ? " active" : "")}
+                      onClick={() => setActive(i)}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </nav>
+              }
+            />
+          ) : (
+            <main className="book-placeholder">
+              <h2>{book.empty}</h2>
+              <p>先读 Agent 卷正文与实验，待 trace 演武场稳定后接入此处。</p>
+            </main>
+          )}
         </div>
       </div>
     </div>

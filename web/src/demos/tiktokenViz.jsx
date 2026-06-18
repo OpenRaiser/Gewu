@@ -133,5 +133,5 @@ export const tiktokenDemo = {
     { t: "字节级 BPE", d: "真实 GPT 在<b>字节</b>(而非字符)上做合并。好处:任何字符——生僻字、emoji——都能拆到字节兜底再拼回,<b>永不 OOV</b>。代价:一个 emoji 可能占好几个 token。" },
     { t: "前导空格", d: "GPT 把词前的空格也编进 token,<code>hello</code> 和 <code>␣hello</code> 是<b>两个不同 token</b>。这样模型才能准确还原词与词之间的空格。" },
   ],
-  localCmd: "cd ch04-tokenization/code && pip install tiktoken && python3 tiktoken_demo.py",
+  localCmd: "cd llm-volume/ch04-tokenization/code && pip install tiktoken && python3 tiktoken_demo.py",
 };

@@ -150,5 +150,5 @@ export const trainEmbedDemo = {
     { t: "含义是「副产品」", d: "真实 GPT <b>没有</b>「告诉它谁和谁同类」这种监督,它只是反复<b>猜下一个字</b>。含义向量是顺带学出来的——但「同类相近」这种结构会自然涌现,效果惊人地好。" },
     { t: "这里的「监督」只为演示", d: "本式特意给了明确目标(同类→1、异类→0),是为了让「随机→学出含义」看得见。真实训练靠的是语言任务本身,无需人工标注谁是同类。" },
   ],
-  localCmd: "cd ch05-embedding/code && python3 nn_embedding.py",
+  localCmd: "cd llm-volume/ch05-embedding/code && python3 nn_embedding.py",
 };

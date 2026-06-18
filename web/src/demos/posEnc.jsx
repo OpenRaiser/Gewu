@@ -141,5 +141,5 @@ export const posEncDemo = {
     { t: "怎么用", d: "就一个「<b>加</b>」字:<b>词向量 + 位置编码</b>,逐元素相加,形状不变。从此同一个词在不同位置,进注意力的向量也不同。" },
     { t: "可学习位置编码", d: "另一种做法:把位置向量当成<b>参数</b>直接训练。GPT 系列多用这种,下一卷搭 GPT 时会用到。思想都是「给位置一个独有向量」。" },
   ],
-  localCmd: "cd ch07-transformer-block/code && python3 positional_encoding.py",
+  localCmd: "cd llm-volume/ch07-transformer-block/code && python3 positional_encoding.py",
 };

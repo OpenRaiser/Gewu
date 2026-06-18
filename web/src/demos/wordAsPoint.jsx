@@ -171,5 +171,5 @@ export const wordPointDemo = {
     { t: "谁来决定坐标?", d: "这一式是<b>你</b>手动拖。真实模型里没人手摆——这些坐标是<b>训练出来</b>的(第五式会亲眼看到)。这一式只是先建立「位置=含义」的直觉。" },
     { t: "和上一式的关系", d: "上一式说明「编号/one-hot 不行」;这一式给出出路——<b>把词放进空间</b>。one-hot 其实也是空间里的点,但它让所有词两两等距;而好的词向量会让同类挤成一团。" },
   ],
-  localCmd: "cd ch05-embedding/code && python3 embedding_table.py",
+  localCmd: "cd llm-volume/ch05-embedding/code && python3 embedding_table.py",
 };

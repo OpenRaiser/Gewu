@@ -122,5 +122,5 @@ export const kvCacheDemo = {
     { t: "缓存不改变结果", d: "缓存只是省去重复计算,数学上和「每步重算」<b>逐位一致</b>(代码里用 allclose 全程验证为 True)。它换的是速度,不是精度。" },
     { t: "代价是显存", d: "得把<b>所有历史 K、V</b> 一直存着。这正是长上下文很吃显存的根本原因之一,也是 vLLM、TensorRT-LLM 等推理框架把 KV cache 当<b>头号优化</b>的原因。" },
   ],
-  localCmd: "cd ch13-inference/code && python3 kv_cache.py",
+  localCmd: "cd llm-volume/ch13-inference/code && python3 kv_cache.py",
 };

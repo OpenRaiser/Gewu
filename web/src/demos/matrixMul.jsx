@@ -122,7 +122,7 @@ export const matrixDemo = {
     prev: ["卷一第一式点积"],
     current: ["行向量 @ 矩阵", "新坐标由两次点积得到"],
     next: ["Embedding 查表", "Q/K/V 投影", "神经网络线性层"],
-    sources: ["ch01-math/code/matrices.py"],
+    sources: ["llm-volume/ch01-math/code/matrices.py"],
   },
   lines, paramDefs, initial, compute, frames, Viz, note, pyCode,
 };

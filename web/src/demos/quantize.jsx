@@ -128,5 +128,5 @@ export const quantizeDemo = {
     { t: "代价是精度", d: "float 连续,int8 只有 <b>256 个台阶</b>,必有四舍五入误差(最多半格)。但实测:权重相对误差 <b>0.0108</b>、对输出的相对误差 <b>0.0100</b>——只有 1% 左右。" },
     { t: "划算在哪", d: "体积缩到 <b>25%</b>,误差仅 ~1%,模型行为基本不变,还更省显存、加载更快,边缘设备也跑得动。真实做法更精细(<b>分组量化、4-bit、激活量化</b>),但内核就是「缩放+取整」。" },
   ],
-  localCmd: "cd ch13-inference/code && python3 quantization.py",
+  localCmd: "cd llm-volume/ch13-inference/code && python3 quantization.py",
 };

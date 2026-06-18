@@ -115,5 +115,5 @@ export const loraParamDemo = {
     { t: "占比 = 2r/d", d: "4096×4096、r=4 时只占 0.20%;r=8 占 0.39%。秩越小越省。这就是为什么一张消费级显卡也能微调百亿模型。" },
     { t: "可插拔适配器", d: "部署时既可把 B·A <b>合并回 W</b>(零额外推理开销),也可不合并、<b>按任务切换</b>不同的 LoRA 旁路——一个底座模型,多套小适配器。" },
   ],
-  localCmd: "cd ch11-finetune/code && python3 lora_idea.py",
+  localCmd: "cd llm-volume/ch11-finetune/code && python3 lora_idea.py",
 };

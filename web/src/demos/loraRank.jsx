@@ -131,5 +131,5 @@ export const loraRankDemo = {
     { t: "这就是 LoRA 的底气", d: "经验上微调的改动量 ΔW <b>确实接近低秩</b>(奇异值衰减快)。所以用一个小 r 的 B·A 去近似它,几乎不损失效果,却省下绝大部分参数。" },
     { t: "B 初始化为 0", d: "LoRA 把旁路的 B 初始化为 0,训练<b>起点</b>处 B·A=0,整层完全等于原模型——从「原样」平滑开始适配,不破坏预训练已有的能力。" },
   ],
-  localCmd: "cd ch11-finetune/code && python3 lora_idea.py",
+  localCmd: "cd llm-volume/ch11-finetune/code && python3 lora_idea.py",
 };

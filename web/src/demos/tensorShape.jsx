@@ -126,7 +126,7 @@ export const shapeDemo = {
     prev: ["卷一矩阵乘"],
     current: ["shape 检查", "一个输出格子来自一行乘一列"],
     next: ["Linear 层", "Q/K/V 投影", "训练 batch"],
-    sources: ["ch02-pytorch/code/tensors.py"],
+    sources: ["llm-volume/ch02-pytorch/code/tensors.py"],
   },
-  localCmd: "cd ch02-pytorch/code && python3 tensors.py",
+  localCmd: "cd llm-volume/ch02-pytorch/code && python3 tensors.py",
 };

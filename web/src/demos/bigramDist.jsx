@@ -139,7 +139,7 @@ export const bigramDistDemo = {
     prev: ["卷一 softmax/归一化"],
     current: ["字对计数", "+α 平滑", "row/sum 变概率"],
     next: ["按概率采样", "交叉熵 loss", "GPT 下一个 token"],
-    sources: ["ch03-language-model/code/predict_next.py", "web/src/demos/ch03corpus.js"],
+    sources: ["llm-volume/ch03-language-model/code/predict_next.py", "web/src/demos/ch03corpus.js"],
   },
   terms: [
     { t: "归一化 (normalize)", d: "把一组数同时除以它们的总和,使加起来正好 <b>= 1</b>。次数 [4,3,1] 归一化后成概率 [0.5,0.375,0.125]——这样才能当「概率」用。" },
@@ -148,5 +148,5 @@ export const bigramDistDemo = {
     { t: "bigram(二元模型)", d: "只看<b>前一个字</b>来猜下一个字的模型。<code>(天→明)</code> 这样相邻的两字对就叫一个 bigram。" },
     { t: "边界符 ·", d: "同时代表「开头」和「结尾」的特殊符号。<code>·天明·</code> 让模型既能学「名字以什么字起头」,也能学「何时收尾」。" },
   ],
-  localCmd: "cd ch03-language-model/code && python3 predict_next.py",
+  localCmd: "cd llm-volume/ch03-language-model/code && python3 predict_next.py",
 };

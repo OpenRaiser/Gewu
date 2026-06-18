@@ -238,7 +238,7 @@ export const attnQkvDemo = {
     prev: ["ch06 第一式 X@Xᵀ", "ch01 点积/softmax"],
     current: ["Q=XWqᵀ", "K=XWkᵀ", "V=XWvᵀ", "weights@V"],
     next: ["causal mask", "multi-head attention", "Transformer Block"],
-    sources: ["ch06-attention/code/self_attention.py", "web/src/demos/ch06attn.js"],
+    sources: ["llm-volume/ch06-attention/code/self_attention.py", "web/src/demos/ch06attn.js"],
   },
   lines, paramDefs, initial, compute, frames, Viz, note, pyCode, playMs: 1100,
   terms: [
@@ -247,5 +247,5 @@ export const attnQkvDemo = {
     { t: "打分与取值解耦", d: "上一式用 X 同时打分和取值。Q/K/V 让两件事用<b>不同参数</b>:模型可以学「该看谁」和「看到后取什么」两套独立逻辑,表达力更强。" },
     { t: "和上一式的承接", d: "去掉 Wq=Wk=Wv=单位阵,Q/K/V 就退化回上一式。所以 Q/K/V 是「顾盼生义」的<b>可学习升级版</b>。" },
   ],
-  localCmd: "cd ch06-attention/code && python3 self_attention.py",
+  localCmd: "cd llm-volume/ch06-attention/code && python3 self_attention.py",
 };

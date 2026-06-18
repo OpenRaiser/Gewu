@@ -169,5 +169,5 @@ export const bpeDemo = {
     { t: "子词 (subword)", d: "介于字符和词之间的片段,如 token+ization。BPE 的产物就是一堆子词:常见词整块、生僻词由子词拼出——这样既不 OOV,序列又不会太长。" },
     { t: "可复现", d: "频次相同的对,按固定规则(这里按编号顺序)选,保证每次训练出同一套合并规则。编码新文本时也按这套规则的<b>先后顺序</b>复现合并。" },
   ],
-  localCmd: "cd ch04-tokenization/code && python3 bpe.py",
+  localCmd: "cd llm-volume/ch04-tokenization/code && python3 bpe.py",
 };

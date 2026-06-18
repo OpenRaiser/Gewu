@@ -196,7 +196,7 @@ export const attnRawDemo = {
     prev: ["ch01 点积", "ch01 softmax", "ch05 词向量"],
     current: ["scores=X@Xᵀ", "weights=softmax(scores)", "上下文加权汇总"],
     next: ["Q/K/V 投影", "causal mask", "Transformer Block"],
-    sources: ["ch06-attention/code/why_attention.py", "web/src/demos/ch06attn.js"],
+    sources: ["llm-volume/ch06-attention/code/why_attention.py", "web/src/demos/ch06attn.js"],
   },
   lines, paramDefs, initial, compute, frames, Viz, note, pyCode, playMs: 1050,
   terms: [
@@ -206,5 +206,5 @@ export const attnRawDemo = {
     { t: "贡献向量", d: "<b>C[j] = w[j] × X[j]</b>。w[j] 是一个数,会把第 j 个词的整条向量一起放大或缩小。最后 <b>y=C[0]+C[1]+...</b>,是按每个维度分别相加。" },
     { t: "和后面的关系", d: "这一式没有 Q/K/V。下一式会引入三个投影矩阵,让「打分」和「取值」用<b>不同视角</b>,更灵活——那才是真正的 self-attention。" },
   ],
-  localCmd: "cd ch06-attention/code && python3 why_attention.py",
+  localCmd: "cd llm-volume/ch06-attention/code && python3 why_attention.py",
 };

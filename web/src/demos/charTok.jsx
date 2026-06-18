@@ -128,5 +128,5 @@ export const charTokDemo = {
     { t: "encode / decode", d: "<b>encode</b>:文字→编号;<b>decode</b>:编号→文字。二者必须<b>互逆</b>——解码能一字不差还原原文,否则信息就丢了。" },
     { t: "字符级的代价", d: "词表小、绝不会遇到不认识的字;但<b>序列长</b>(一个字一个 token),模型要处理的步数多。下一式的 BPE 就是来解决这点的。" },
   ],
-  localCmd: "cd ch04-tokenization/code && python3 char_tokenizer.py",
+  localCmd: "cd llm-volume/ch04-tokenization/code && python3 char_tokenizer.py",
 };

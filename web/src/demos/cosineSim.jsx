@@ -138,5 +138,5 @@ export const cosineDemo = {
     { t: "近义词检索", d: "给一个词,算它和所有词的余弦,取最大的几个,就是它的「最近邻」=最相似的词。搜索、推荐里的「找相似」都是这么做的。" },
     { t: "点积 (dot product)", d: "<b>u·v = Σ uᵢvᵢ</b>,把对应位相乘再相加。它同时含了「方向是否一致」和「向量多长」两层信息;除以两者长度,就只剩方向。" },
   ],
-  localCmd: "cd ch05-embedding/code && python3 similarity.py",
+  localCmd: "cd llm-volume/ch05-embedding/code && python3 similarity.py",
 };

@@ -167,5 +167,5 @@ export const gptDemo = {
     { t: "未训练 loss ≈ ln(vocab)", d: "没训练的模型对每个字毫无偏好 = 均匀瞎猜,交叉熵正好是 <b>ln(词表大小)</b>。实测 ln(65)≈4.174、跑出 4.429——接近即说明前向/loss/形状全对。" },
     { t: "block_size(上下文窗口)", d: "位置嵌入表只有 block_size 行,所以一次最多看这么多词。生成时永远把序列<b>截到最近 block_size 个</b>再喂进去。" },
   ],
-  localCmd: "cd ch08-build-gpt/code && python3 gpt.py",
+  localCmd: "cd llm-volume/ch08-build-gpt/code && python3 gpt.py",
 };

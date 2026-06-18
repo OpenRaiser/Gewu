@@ -135,5 +135,5 @@ export const dpoDemo = {
     { t: "β 当缰绳", d: "所有变化都对照<b>冻结的 ref</b>(对齐前的自己)衡量,系数 <b>β</b> 控制能离 ref 多远。防止模型为讨好奖励而胡说、丢掉预训练能力。太大跑偏、太小学不动。" },
     { t: "一个损失挑两担", d: "<b>−log sigmoid(β·(m_win − m_lose))</b> 天然同时:① 拉开好坏回答的差距(学偏好)② 贴着 ref 不乱跑(别跑偏)。实跑后好回答 0.947、差回答近 0,整体仍是合法分布。" },
   ],
-  localCmd: "cd ch12-alignment/code && python3 dpo_train.py",
+  localCmd: "cd llm-volume/ch12-alignment/code && python3 dpo_train.py",
 };

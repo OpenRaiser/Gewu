@@ -177,7 +177,7 @@ export const bigramGenDemo = {
     prev: ["卷三第一式概率表"],
     current: ["随机数 r", "累计概率区间", "逐字采样"],
     next: ["temperature/top-k/top-p", "GPT 自回归生成"],
-    sources: ["ch03-language-model/code/bigram_counts.py", "web/src/demos/ch03corpus.js"],
+    sources: ["llm-volume/ch03-language-model/code/bigram_counts.py", "web/src/demos/ch03corpus.js"],
   },
   terms: [
     { t: "采样 (sampling)", d: "按概率「掷骰子」抽一个结果。概率 50% 的字约一半时候被抽中——<b>不是</b>每次都选最高的那个,所以同一个模型能生成多种不同的名字。" },
@@ -185,5 +185,5 @@ export const bigramGenDemo = {
     { t: "自回归 (autoregressive)", d: "把刚生成的字接回输入,再拿它去猜下一个字,如此循环。ChatGPT 也是这样<b>一个字接一个字</b>吐出来的,并非一次想好整句。" },
     { t: "收尾 / 边界符", d: "抽到边界符 <code>·</code> 就停下。模型自己学会了「名字该多长」——这就是它知道何时结束的方式。" },
   ],
-  localCmd: "cd ch03-language-model/code && python3 bigram_counts.py",
+  localCmd: "cd llm-volume/ch03-language-model/code && python3 bigram_counts.py",
 };

@@ -173,7 +173,7 @@ export const trainDemo = {
     prev: ["卷二 autograd", "卷一梯度下降"],
     current: ["pred=w*x+b", "loss=MSE", "w,b 按梯度更新"],
     next: ["训练 Embedding", "训练 GPT"],
-    sources: ["ch02-pytorch/code/first_network.py"],
+    sources: ["llm-volume/ch02-pytorch/code/first_network.py"],
   },
-  localCmd: "cd ch02-pytorch/code && python3 first_network.py",
+  localCmd: "cd llm-volume/ch02-pytorch/code && python3 first_network.py",
 };

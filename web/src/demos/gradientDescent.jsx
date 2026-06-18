@@ -155,7 +155,7 @@ export const gradientDemo = {
     prev: ["函数曲线", "斜率"],
     current: ["grad=2(x-3)", "lr*grad", "x=x-lr*grad"],
     next: ["PyTorch autograd", "神经网络训练", "GPT loss 下降"],
-    sources: ["ch01-math/code/gradient_descent.py"],
+    sources: ["llm-volume/ch01-math/code/gradient_descent.py"],
   },
   lines, paramDefs, initial, compute, Viz, note, pyCode, frames,
 };

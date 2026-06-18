@@ -119,5 +119,5 @@ export const layerNormDemo = {
     { t: "Pre-LN", d: "现代 GPT 的写法:<b>先</b> LayerNorm <b>再</b>进子层,最后加残差——<b>x = x + 子层(LN(x))</b>。比原版 Post-LN 训练更稳。" },
     { t: "为何子层置零≈恒等", d: "若子层输出为 0,残差通路让 out = x + 0 = x,整块退化成<b>恒等映射</b>。这保证「子层还没学会发力」时信息能原样穿过——深 Transformer 好训的关键。" },
   ],
-  localCmd: "cd ch07-transformer-block/code && python3 layernorm_residual.py",
+  localCmd: "cd llm-volume/ch07-transformer-block/code && python3 layernorm_residual.py",
 };

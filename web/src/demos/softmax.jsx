@@ -117,7 +117,7 @@ export const softmaxDemo = {
     prev: ["指数函数", "概率和为 1"],
     current: ["逐元素 exp", "总和归一", "概率分布"],
     next: ["语言模型输出概率", "attention 权重", "采样策略"],
-    sources: ["ch01-math/code/softmax.py"],
+    sources: ["llm-volume/ch01-math/code/softmax.py"],
   },
   lines, paramDefs, initial, compute, frames, Viz, note, pyCode,
 };

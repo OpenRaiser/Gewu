@@ -153,7 +153,7 @@ export const bigramLossDemo = {
     prev: ["概率表 P", "卷一 log/平均直觉"],
     current: ["每个真实字对 -log(P)", "累加后平均", "困惑度"],
     next: ["GPT cross_entropy", "训练 loss 曲线"],
-    sources: ["ch03-language-model/code/evaluate_loss.py", "web/src/demos/ch03corpus.js"],
+    sources: ["llm-volume/ch03-language-model/code/evaluate_loss.py", "web/src/demos/ch03corpus.js"],
   },
   terms: [
     { t: "loss / 损失", d: "给模型「打分」的数字,<b>越小越好</b>。它衡量模型对真实数据有多「意外」:猜得越准,损失越小;完美模型 loss=0。" },
@@ -162,5 +162,5 @@ export const bigramLossDemo = {
     { t: "瞎猜基线 (baseline)", d: "完全不学、对 V 个字平均下注时的 loss,正好 <b>= ln V</b>。这里 V=40,基线 = ln40 ≈ 3.69。模型只有比它低才算真学到东西。" },
     { t: "困惑度 (perplexity)", d: "<code>e^loss</code>,直观版的 loss。可理解为「模型眼里还剩几个字在纠结」:基线 40 选 1,我们的模型只在 ≈18 个字里犹豫。越小越好。" },
   ],
-  localCmd: "cd ch03-language-model/code && python3 evaluate_loss.py",
+  localCmd: "cd llm-volume/ch03-language-model/code && python3 evaluate_loss.py",
 };

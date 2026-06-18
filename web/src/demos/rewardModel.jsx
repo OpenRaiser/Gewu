@@ -165,5 +165,5 @@ export const rewardModelDemo = {
     { t: "奖励模型损失", d: "<b>−log sigmoid(reward[赢]−reward[输])</b>,即 Bradley-Terry 的负对数似然。逼着「赢家分−输家分」尽量大。学出的分数只看相对高低就够用。" },
     { t: "它是 RLHF 的裁判", d: "学出的打分尺当回报信号:经典 RLHF 下一步用强化学习(PPO)推模型多说高分回答。但 PPO 要摆弄多个模型、超参敏感——所以有了更简洁的 DPO。" },
   ],
-  localCmd: "cd ch12-alignment/code && python3 reward_model.py",
+  localCmd: "cd llm-volume/ch12-alignment/code && python3 reward_model.py",
 };

@@ -121,5 +121,5 @@ export const tempDemo = {
     { t: "采样不改模型", d: "模型参数、logits 都没变,变的只是「<b>怎么挑</b>」。所以同一个模型,低温像复读机、高温像诗人——风格全在采样这一步。" },
     { t: "实践搭配", d: "单用高温容易蹦出离谱字,所以常<b>先 top-k / top-p 砍长尾,再配适中 T</b>(如 0.7~1.0)。这就是各家 API 同时暴露 temperature 和 top_p 的原因。" },
   ],
-  localCmd: "cd ch10-sampling/code && python3 sampling_strategies.py",
+  localCmd: "cd llm-volume/ch10-sampling/code && python3 sampling_strategies.py",
 };

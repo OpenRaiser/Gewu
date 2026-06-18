@@ -155,5 +155,5 @@ export const topKpDemo = {
     { t: "为什么 top-p 自适应更好", d: "模型<b>很确定</b>时(分布尖)少数字就凑够 p,候选集小;<b>犹豫</b>时(分布平)要更多字才凑够,候选集大。比固定 k 更贴合每一步的实际情况。" },
     { t: "清零再归一", d: "被砍的位置设概率 0(或 logits=-∞),剩下的<b>重新归一</b>使和=1,再采样。保证还是合法概率分布。" },
   ],
-  localCmd: "cd ch10-sampling/code && python3 sampling_strategies.py",
+  localCmd: "cd llm-volume/ch10-sampling/code && python3 sampling_strategies.py",
 };

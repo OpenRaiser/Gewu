@@ -130,7 +130,7 @@ export const autogradDemo = {
     prev: ["卷一梯度下降", "链式法则直觉"],
     current: ["正向记录计算图", "backward 反向乘局部梯度"],
     next: ["loss.backward()", "优化器更新参数"],
-    sources: ["ch02-pytorch/code/autograd_intro.py"],
+    sources: ["llm-volume/ch02-pytorch/code/autograd_intro.py"],
   },
-  localCmd: "cd ch02-pytorch/code && python3 autograd_intro.py",
+  localCmd: "cd llm-volume/ch02-pytorch/code && python3 autograd_intro.py",
 };
