@@ -154,35 +154,35 @@ const AGENT_VOLUMES = [
     id: "agent-vol1",
     name: "卷一 · 想做相生 (Harness)",
     scrolls: [
-      { id: "harness", label: "第一式 · 想做相生", demo: agentHarnessDemo },
+      { id: "harness", label: "想做相生", demo: agentHarnessDemo },
     ],
   },
   {
     id: "agent-vol2",
     name: "卷二 · 立规执器 (工具)",
     scrolls: [
-      { id: "tooluse", label: "第一式 · 立规执器", demo: toolUseDemo },
+      { id: "tooluse", label: "立规执器", demo: toolUseDemo },
     ],
   },
   {
     id: "agent-vol3",
     name: "卷三 · 分流持态 (记忆)",
     scrolls: [
-      { id: "memory", label: "第一式 · 分流持态", demo: memoryStateDemo },
+      { id: "memory", label: "分流持态", demo: memoryStateDemo },
     ],
   },
   {
     id: "agent-vol4",
     name: "卷四 · 败中求正 (反馈)",
     scrolls: [
-      { id: "reflexion", label: "第一式 · 败中求正", demo: reflexionDemo },
+      { id: "reflexion", label: "败中求正", demo: reflexionDemo },
     ],
   },
   {
     id: "agent-vol5",
     name: "卷五 · 分而委之 (子 Agent)",
     scrolls: [
-      { id: "subagent", label: "第一式 · 分而委之", demo: subAgentDemo },
+      { id: "subagent", label: "分而委之", demo: subAgentDemo },
     ],
   },
 ];
