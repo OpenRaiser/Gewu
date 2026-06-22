@@ -7,7 +7,7 @@ from typing import Any
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
 SKIP_DIRS = {".git", "node_modules", "dist", "__pycache__"}
-SKIP_FILES = {"trace.jsonl"}
+SKIP_FILES = {"trace.jsonl", "state.json"}
 
 
 TOOL_SPECS: dict[str, dict[str, Any]] = {

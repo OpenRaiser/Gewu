@@ -15,6 +15,8 @@ from tools import format_tool_specs, run_tool
 
 ROOT = Path(__file__).resolve().parents[3]
 TRACE_PATH = Path(__file__).with_name("trace.jsonl")
+STATE_PATH = Path(__file__).with_name("state.json")
+OBSERVATION_SUMMARY_CHARS = 500
 
 
 SYSTEM_PROMPT_PREFIX = """You are a minimal ReAct-style file-research agent.
@@ -57,7 +59,7 @@ def _default_study_path() -> str:
     return "."
 
 
-def scripted_model_response(step: int) -> str:
+def scripted_normal_response(step: int) -> str:
     study_path = _default_study_path()
     study_dir = str(Path(study_path).parent)
     if study_dir == ".":
@@ -85,6 +87,37 @@ def scripted_model_response(step: int) -> str:
     if step <= len(actions):
         return json.dumps(actions[step - 1], ensure_ascii=False)
     return json.dumps(actions[-1], ensure_ascii=False)
+
+
+def scripted_recovery_response(step: int) -> str:
+    actions = [
+        {
+            "action": "read_file",
+            "args": {},
+            "reason": "故意遗漏 path，演示 harness 如何把参数错误转成 observation",
+        },
+        {
+            "action": "search_text",
+            "args": {"pattern": "Phase 04", "path": "agent-volume/roadmap.md", "max_matches": 5},
+            "reason": "上一轮 observation 指出 read_file 缺少 path；这次改用明确参数搜索路线文件",
+        },
+        {
+            "action": "final",
+            "answer": (
+                "恢复演示完成：第一步工具调用因缺少 path 失败，harness 返回 validation_error；"
+                "第二步根据错误反馈改用带完整参数的 search_text；第三步在 observation 足够后停止。"
+            ),
+        },
+    ]
+    if step <= len(actions):
+        return json.dumps(actions[step - 1], ensure_ascii=False)
+    return json.dumps(actions[-1], ensure_ascii=False)
+
+
+def scripted_model_response(step: int, scenario: str) -> str:
+    if scenario == "recover":
+        return scripted_recovery_response(step)
+    return scripted_normal_response(step)
 
 
 def call_model(messages: list[dict[str, str]]) -> str:
@@ -144,17 +177,80 @@ def append_trace(event: dict[str, Any]) -> None:
         handle.write(json.dumps(event, ensure_ascii=False) + "\n")
 
 
-def run(task: str, max_steps: int, *, scripted_demo: bool = False) -> str:
+def load_state() -> dict[str, Any]:
+    if not STATE_PATH.exists():
+        return {
+            "runs": 0,
+            "current_task": None,
+            "steps": 0,
+            "last_action": None,
+            "last_observation_summary": None,
+            "final_answer": None,
+            "status": "new",
+        }
+    return json.loads(STATE_PATH.read_text(encoding="utf-8"))
+
+
+def save_state(state: dict[str, Any]) -> None:
+    state = {"updated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), **state}
+    STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def summarize_observation(observation: str) -> str:
+    try:
+        payload = json.loads(observation)
+    except json.JSONDecodeError:
+        return observation[:OBSERVATION_SUMMARY_CHARS]
+
+    summary: dict[str, Any] = {"ok": payload.get("ok")}
+    for key in ("error_type", "error", "path", "truncated", "chars"):
+        if key in payload:
+            summary[key] = payload[key]
+    if "matches" in payload:
+        summary["matches"] = payload["matches"][:3]
+        summary["match_count_shown"] = min(len(payload["matches"]), 3)
+    if "entries" in payload:
+        summary["entries"] = payload["entries"][:5]
+        summary["entry_count_shown"] = min(len(payload["entries"]), 5)
+    if "content" in payload:
+        content = str(payload["content"])
+        summary["content_preview"] = content[:OBSERVATION_SUMMARY_CHARS]
+    return json.dumps(summary, ensure_ascii=False)
+
+
+def observation_has_error(observation: str) -> bool:
+    try:
+        payload = json.loads(observation)
+    except json.JSONDecodeError:
+        return False
+    return payload.get("ok") is False
+
+
+def run(task: str, max_steps: int, *, scripted_demo: bool = False, scripted_scenario: str = "normal") -> str:
     messages = [
         {"role": "system", "content": build_system_prompt()},
         {"role": "user", "content": task},
     ]
     append_trace({"type": "task", "task": task, "workspace": str(ROOT)})
+    state = load_state()
+    state.update(
+        {
+            "runs": int(state.get("runs", 0)) + 1,
+            "current_task": task,
+            "steps": 0,
+            "last_action": None,
+            "last_observation_summary": None,
+            "final_answer": None,
+            "status": "running",
+            "error_count": 0,
+        }
+    )
+    save_state(state)
 
     seen_tool_calls: dict[str, int] = {}
 
     for step in range(1, max_steps + 1):
-        raw = scripted_model_response(step) if scripted_demo else call_model(messages)
+        raw = scripted_model_response(step, scripted_scenario) if scripted_demo else call_model(messages)
         append_trace({"type": "model", "step": step, "raw": raw})
         print(f"\n[step {step}] model: {raw}")
 
@@ -171,6 +267,8 @@ def run(task: str, max_steps: int, *, scripted_demo: bool = False) -> str:
         if name == "final":
             answer = str(action.get("answer", ""))
             append_trace({"type": "final", "step": step, "answer": answer})
+            state.update({"steps": step, "last_action": "final", "final_answer": answer, "status": "done"})
+            save_state(state)
             return answer
 
         args = action.get("args", {})
@@ -189,11 +287,26 @@ def run(task: str, max_steps: int, *, scripted_demo: bool = False) -> str:
 
         append_trace({"type": "tool", "step": step, "action": name, "args": args, "observation": observation})
         print(f"[step {step}] observation: {observation[:1000]}")
+        error_count = int(state.get("error_count", 0))
+        if observation_has_error(observation):
+            error_count += 1
+        state.update(
+            {
+                "steps": step,
+                "last_action": {"name": name, "args": args},
+                "last_observation_summary": summarize_observation(observation),
+                "status": "running",
+                "error_count": error_count,
+            }
+        )
+        save_state(state)
 
         messages.append({"role": "assistant", "content": json.dumps(action, ensure_ascii=False)})
         messages.append({"role": "user", "content": f"Observation: {observation}"})
 
     append_trace({"type": "stopped", "reason": "max_steps", "max_steps": max_steps})
+    state.update({"steps": max_steps, "status": "stopped", "stop_reason": "max_steps"})
+    save_state(state)
     return f"Stopped after {max_steps} steps without final answer."
 
 
@@ -207,16 +320,34 @@ def main() -> int:
         help="Use a deterministic scripted model so the harness can run without an API key.",
     )
     parser.add_argument(
+        "--scripted-scenario",
+        choices=("normal", "recover"),
+        default="normal",
+        help="Choose which deterministic scripted model scenario to run.",
+    )
+    parser.add_argument(
         "--reset-trace",
         action="store_true",
         help="Delete the previous trace.jsonl before running.",
+    )
+    parser.add_argument(
+        "--reset-state",
+        action="store_true",
+        help="Delete the previous state.json before running.",
     )
     args = parser.parse_args()
 
     try:
         if args.reset_trace and TRACE_PATH.exists():
             TRACE_PATH.unlink()
-        answer = run(args.task, args.max_steps, scripted_demo=args.scripted_demo)
+        if args.reset_state and STATE_PATH.exists():
+            STATE_PATH.unlink()
+        answer = run(
+            args.task,
+            args.max_steps,
+            scripted_demo=args.scripted_demo,
+            scripted_scenario=args.scripted_scenario,
+        )
     except Exception as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

@@ -59,7 +59,47 @@
 - 能解释参数校验和结构化 observation 的必要性。
 - 能在 minimal harness 中看懂 schema -> validation -> execution -> observation 的路径。
 
-## Phase 03: Feedback-Driven Single Agent
+## Phase 03: Memory / Long-Term State / Environment
+
+目标：理解 context、state、memory、trace 的区别，以及长任务如何落盘和恢复。
+
+需要掌握：
+
+- context window
+- working state
+- trace
+- long-term memory
+- summarization
+- state persistence
+- recovery
+
+必读论文：
+
+- Generative Agents: Interactive Simulacra of Human Behavior  
+  https://arxiv.org/abs/2304.03442
+- Voyager: An Open-Ended Embodied Agent with Large Language Models  
+  https://arxiv.org/abs/2305.16291
+
+阶段完成标准：
+
+- 能区分 context、state、memory、trace。
+- 能解释为什么不能把所有历史都塞进 prompt。
+- 能说明 state.json 和 trace.jsonl 各自解决什么问题。
+- 能在 minimal harness 中看懂 state 落盘和运行恢复的基本思路。
+
+## Phase 04: Feedback-Driven Single Agent
+
+目标：理解 agent 如何利用环境反馈、错误反馈、自我反馈和规划机制改进下一步行动。
+
+需要掌握：
+
+- feedback loop
+- error recovery
+- self-reflection
+- refinement
+- planning
+- search over actions
+- verifier / critic signal
 
 必读论文：
 
@@ -70,16 +110,26 @@
 - Language Agent Tree Search Unifies Reasoning Acting and Planning in Language Models  
   https://arxiv.org/abs/2310.04406
 
-## Phase 04: Memory / Long-Term State / Environment
+阶段完成标准：
 
-必读论文：
-
-- Generative Agents: Interactive Simulacra of Human Behavior  
-  https://arxiv.org/abs/2304.03442
-- Voyager: An Open-Ended Embodied Agent with Large Language Models  
-  https://arxiv.org/abs/2305.16291
+- 能解释 ReAct、Reflexion、Self-Refine、LATS 的区别。
+- 能说明错误 observation 如何触发下一步修正。
+- 能区分环境反馈、自我反馈和 verifier 反馈。
+- 能在 minimal harness 中看懂一次失败 -> 恢复 -> final 的 trace。
 
 ## Phase 05: Sub-Agent / Manager-Worker
+
+目标：理解主 agent 如何拆分任务、启动隔离 worker、收集 worker 汇报，并由 manager 聚合结果。
+
+需要掌握：
+
+- task decomposition
+- isolated context
+- worker trace
+- manager trace
+- result aggregation
+- conflict handling
+- parallelism vs coordination cost
 
 必读论文：
 
@@ -91,6 +141,13 @@
   https://arxiv.org/abs/2307.07924
 - CAMEL: Communicative Agents for "Mind" Exploration of Large Language Model Society  
   https://arxiv.org/abs/2303.17760
+
+阶段完成标准：
+
+- 能解释 sub-agent 和普通工具调用的区别。
+- 能说明隔离上下文为什么有价值，也有什么代价。
+- 能画出 manager -> workers -> reducer 的执行路径。
+- 能在 sub-agent-runner 实验中读懂 manager trace、worker trace 和聚合结果。
 
 ## Phase 06: Evaluator / Critic / Verifier
 

@@ -198,7 +198,7 @@ function note(stage, params, d) {
         ? "五关全过后才 <code>TOOLS[name](**validated)</code> 真实执行。注意传进去的是<b>校验后</b>的参数（含补好的默认值），不是模型原始输出。"
         : "前面任意一关失败都<b>不会执行</b>。把校验放在执行之前，是为了让错误参数永远碰不到真实的文件/网络/数据库操作。";
     case 6:
-      return `observation 一律结构化：成功带 <code>content/truncated/chars</code>，失败带 <code>error_type/error/tool/args</code>。这样<b>模型能据此重试、人能 debug、harness 能归因</b>。三篇论文分工：<a href="${MRKL_URL}" target="_blank" rel="noreferrer">MRKL</a> 给模块化工具观，<a href="${TOOLFORMER_URL}" target="_blank" rel="noreferrer">Toolformer</a> 说明模型可学习何时用工具。`;
+      return `observation 一律结构化：成功带 <code>content/truncated/chars</code>，失败带 <code>error_type/error/tool/args</code>。这样<b>模型能据此重试、人能 debug、harness 能归因</b>。本式两篇论文：<a href="${MRKL_URL}" target="_blank" rel="noreferrer">MRKL</a> 给模块化工具观，<a href="${TOOLFORMER_URL}" target="_blank" rel="noreferrer">Toolformer</a> 说明模型可学习何时用工具。`;
     default:
       return "拖朱字切换四个 case，点演法逐关走过校验管道。";
   }
@@ -216,14 +216,15 @@ def run_tool(name, args):
 
 export const toolUseDemo = {
   title: "演武场 · 工具校验管道",
-  intro: `<p>上一章模型只要会产出 action 就行；这一章拆开 <b>action → 真实执行</b> 之间最关键的一段：<b>工具 schema 与参数校验</b>。</p>
+  intro: `<p>本式从两篇论文起手：<b><a href="${MRKL_URL}" target="_blank" rel="noreferrer">MRKL</a></b>（模块化神经-符号架构，主张把 LLM 与可验证的外部模块组合）与 <b><a href="${TOOLFORMER_URL}" target="_blank" rel="noreferrer">Toolformer</a></b>（模型可自学何时调用工具）。但论文不管真实执行——执行、校验、权限仍由 harness 承担。</p>
+<p>上一式模型只要会产出 action 就行；本式拆开 <b>action → 真实执行</b> 之间最关键的一段：<b>工具 schema 与参数校验</b>。</p>
 <p><b>核心问题</b>：模型产出的工具调用是<b>不可信文本</b>，可能用错工具名、漏填必填参数、塞超范围的值。harness 不能照单全收，更不能让模型“假装”执行。它在执行前架一条<b>校验管道</b>：工具存在？参数认识？必填齐全？类型/范围对？——任意一关失败都<b>拦下不执行</b>，并回注<b>结构化错误</b>让模型纠正。</p>
 <p><b>Schema 为什么比自然语言说明可靠</b>：自然语言只能“建议”，schema 能被程序<b>校验</b>——参数名、类型、必填、默认值、取值范围都是硬约束。</p>
 <p class="intro-arena-tip">右侧演武场用四个真实 case（输出取自实跑 <code>tools.py</code>）演示管道。拖 <b>朱字</b>切换 case，点演法逐关走过校验，看它在哪一关被拦、产出什么 observation。</p>`,
   bridge: {
-    prev: "ch01：最小 loop —— 模型产出 action，harness 执行回注。",
-    current: "ch02：拆开工具层 —— schema 约束 + 参数校验 + 结构化 observation。",
-    next: "下一章：多工具选择与 observation 治理（截断、归因）。",
+    prev: "第一式：最小 loop —— 模型产出 action，harness 执行回注。",
+    current: "第二式：拆开工具层 —— schema 约束 + 参数校验 + 结构化 observation。",
+    next: "第三式：长任务的信息分流（context / state / memory / trace）。",
     sources: ["MRKL", "Toolformer"],
   },
   lines,

@@ -232,7 +232,7 @@ export const agentHarnessDemo = {
   bridge: {
     prev: "LLM 卷说明模型如何生成文字。",
     current: "ReAct 四问已在正文讲清；这里演示四问落成的真实 loop。",
-    next: "下一章细讲 tool schema、工具选择和 observation 治理。",
+    next: "第二式细讲 tool schema、工具选择和 observation 治理。",
     sources: ["ReAct", "MRKL", "Toolformer"],
   },
   lines,

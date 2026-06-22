@@ -74,7 +74,9 @@ agent-volume/
 ## 当前进度
 
 - 已完成：multi-agent / harness 初始调研
-- 已完成：Phase 01 学习路线和 ReAct 阅读笔记
-- 已完成：minimal-harness 实验雏形
-- 下一步：跑通 minimal harness 的真实模型调用，并把实验结果写入 `ch01-agent-harness/`
-
+- 已完成：ch01 Agent Harness
+- 已完成：ch02 Tool Use
+- 已完成：ch03 Memory and State
+- 已完成：ch04 ReAct / Reflexion / Planning
+- 已完成：ch05 Sub-Agent
+- 下一步：ch06 Agent Team

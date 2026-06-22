@@ -37,6 +37,9 @@ import { ragDemo } from "./demos/rag.jsx";
 import { agentDemo } from "./demos/agent.jsx";
 import { agentHarnessDemo } from "./demos/agentHarness.jsx";
 import { toolUseDemo } from "./demos/toolUse.jsx";
+import { memoryStateDemo } from "./demos/memoryState.jsx";
+import { reflexionDemo } from "./demos/reflexion.jsx";
+import { subAgentDemo } from "./demos/subAgent.jsx";
 
 const LLM_VOLUMES = [
   {
@@ -153,6 +156,9 @@ const AGENT_VOLUMES = [
     scrolls: [
       { id: "harness", label: "第一式 · 想做相生", demo: agentHarnessDemo },
       { id: "tooluse", label: "第二式 · 立规执器", demo: toolUseDemo },
+      { id: "memory", label: "第三式 · 分流持态", demo: memoryStateDemo },
+      { id: "reflexion", label: "第四式 · 败中求正", demo: reflexionDemo },
+      { id: "subagent", label: "第五式 · 分而委之", demo: subAgentDemo },
     ],
   },
 ];
