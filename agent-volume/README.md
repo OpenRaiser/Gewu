@@ -79,4 +79,9 @@ agent-volume/
 - 已完成：ch03 Memory and State
 - 已完成：ch04 ReAct / Reflexion / Planning
 - 已完成：ch05 Sub-Agent
-- 下一步：ch06 Agent Team
+- 已完成：ch06 Agent Team
+- 已完成：ch07 Multi-Agent Collaboration
+- 已完成：ch08 Evaluation and Trace
+- 已完成：ch09 Protocols: MCP / A2A
+- 已完成：ch10 Agent Frameworks
+- 十章正文全部完成。下一步：补充 ch06+ 的可运行实验与 Web 演武场
