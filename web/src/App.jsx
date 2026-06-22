@@ -40,6 +40,11 @@ import { toolUseDemo } from "./demos/toolUse.jsx";
 import { memoryStateDemo } from "./demos/memoryState.jsx";
 import { reflexionDemo } from "./demos/reflexion.jsx";
 import { subAgentDemo } from "./demos/subAgent.jsx";
+import { agentTeamDemo } from "./demos/agentTeam.jsx";
+import { collaborationDemo } from "./demos/collaboration.jsx";
+import { evalTraceDemo } from "./demos/evalTrace.jsx";
+import { protocolsDemo } from "./demos/protocols.jsx";
+import { frameworksDemo } from "./demos/frameworks.jsx";
 
 const LLM_VOLUMES = [
   {
@@ -183,6 +188,41 @@ const AGENT_VOLUMES = [
     name: "卷五 · 分而委之 (子 Agent)",
     scrolls: [
       { id: "subagent", label: "分而委之", demo: subAgentDemo },
+    ],
+  },
+  {
+    id: "agent-vol6",
+    name: "卷六 · 群策共表 (agent team)",
+    scrolls: [
+      { id: "agentteam", label: "群策共表", demo: agentTeamDemo },
+    ],
+  },
+  {
+    id: "agent-vol7",
+    name: "卷七 · 协作算账 (多体协作)",
+    scrolls: [
+      { id: "collaboration", label: "协作算账", demo: collaborationDemo },
+    ],
+  },
+  {
+    id: "agent-vol8",
+    name: "卷八 · 验迹归因 (评估)",
+    scrolls: [
+      { id: "evaltrace", label: "验迹归因", demo: evalTraceDemo },
+    ],
+  },
+  {
+    id: "agent-vol9",
+    name: "卷九 · 纵横分层 (协议)",
+    scrolls: [
+      { id: "protocols", label: "纵横分层", demo: protocolsDemo },
+    ],
+  },
+  {
+    id: "agent-vol10",
+    name: "卷十 · 择器知本 (框架)",
+    scrolls: [
+      { id: "frameworks", label: "择器知本", demo: frameworksDemo },
     ],
   },
 ];
