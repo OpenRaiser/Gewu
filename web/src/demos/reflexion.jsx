@@ -2,229 +2,336 @@ const REFLEXION_URL = "https://arxiv.org/abs/2303.11366";
 const SELF_REFINE_URL = "https://arxiv.org/abs/2303.17651";
 const LATS_URL = "https://arxiv.org/abs/2310.04406";
 
-// 两种处理失败的策略
+const OK = "#3f6b4f";
+const ERR = "#9e2b1e";
+const GOLD = "#9c7b2e";
+const SUB = "#a8946a";
+
+// 三种处理失败的策略（与 ch03 三分流呼应：一个好、两个坏）
 const MODES = [
-  { id: "fail", label: "打印即失败" },
   { id: "recover", label: "结构化回注修正" },
+  { id: "fail", label: "打印即失败" },
+  { id: "loop", label: "回注但无阈值" },
 ];
 
 // recover 场景的真实三步（取自 agent.py scripted_recovery_response 实跑）
-// node：落在哪个阶段；err：该步是否产生 ok:false
-const STEPS = [
+const RECOVER = [
   {
     label: "① action（缺参数）",
     action: '{"action":"read_file","args":{}}',
     obs: '{"ok":false,"error_type":"validation_error","error":"missing required argument for read_file: path"}',
     err: true,
-    failNote: "打印即失败：harness 只把错误打出来，循环中断，任务到此结束。",
-    recoverNote: "结构化回注：错误包成 observation 进 context，error_count→1，模型据此改判。",
   },
   {
     label: "② 修正后 action",
     action: '{"action":"search_text","args":{"pattern":"Phase 04","path":"agent-volume/roadmap.md","max_matches":5}}',
-    obs: '{"ok":true,"matches":[{"path":"agent-volume/roadmap.md","line":...}],"truncated":false}',
+    obs: '{"ok":true,"matches":[...],"truncated":false}',
     err: false,
-    failNote: "（已失败，不会有第二步）",
-    recoverNote: "模型读到「缺 path」→ 改用带完整参数的 search_text，这步成功取证。",
   },
   {
     label: "③ final",
     action: '{"action":"final","answer":"恢复演示完成：失败→改判→成功"}',
     obs: "status=done · error_count=1 · steps=3",
     err: false,
-    failNote: "（已失败，不会有 final）",
-    recoverNote: "证据足够 → final。state 记录 error_count=1，失败与修正都留在 trace。",
   },
 ];
 
-// 左侧心法经文：feedback-driven 恢复机制
-const lines = [
-  { text: "obs = run_tool(name, args)            # 工具执行,可能失败", stage: 0 },
-  { text: "if observation_has_error(obs):        # ok:false?", stage: 1 },
-  { text: "    error_count += 1                  # state 记录失败次数", stage: 2 },
-  { text: "messages += structured_obs(obs)       # 错误也回注 context", stage: 3 },
-  { text: "# 模型读到错误 -> 生成修正后的 action", stage: 4 },
-  { text: "if error_count > THRESHOLD: stop()    # 防无限重试", stage: 5 },
+// loop 场景：模型反复用错路径调 read_file，每次都失败，error_count 不断累积
+const LOOP = [
+  '{"action":"read_file","args":{"path":"roadmap.md"}}',
+  '{"action":"read_file","args":{"path":"Roadmap.md"}}',
+  '{"action":"read_file","args":{"path":"agent-volume/road map.md"}}',
+  '{"action":"read_file","args":{"path":"./roadmap"}}',
+  '{"action":"read_file","args":{"path":"roadmap.txt"}}',
+  '{"action":"read_file","args":{"path":"docs/roadmap.md"}}',
 ];
 
-const paramDefs = { mode: { min: 0, max: 1, step: 1, fmt: (v) => MODES[v].label } };
-const initial = { mode: 1 };
+const lines = [
+  { text: 'obs = run_tool(action)              # ①执行工具, 拿回 observation', stage: 0 },
+  { text: 'if observation_has_error(obs):      # ②判定: 这条 obs 是不是错误', stage: 1 },
+  { text: '    state.error_count += 1          # ③错误计数 +1 (写进 state.json)', stage: 2 },
+  { text: '    ctx.append(structured(obs))     # ④结构化错误回注 context (mode={{mode}})', stage: 3 },
+  { text: 'action = model(ctx)                 # ⑤模型据错误改判, 给出新 action', stage: 4 },
+  { text: 'if state.error_count > {{thresh}}: stop()   # ⑥超阈值即止损/求助', stage: 5 },
+];
+
+const paramDefs = {
+  mode: { min: 0, max: 2, step: 1, fmt: (v) => MODES[v].label },
+  thresh: { min: 1, max: 5, step: 1, fmt: (v) => `${v} 次` },
+};
+const initial = { mode: 0, thresh: 3 };
+
 function compute(p) {
-  return { mode: MODES[p.mode].id, modeIndex: p.mode };
+  return { mode: MODES[p.mode].id, modeIndex: p.mode, thresh: p.thresh };
 }
 
-const OK = "#3f6b4f";
-const ERR = "#9e2b1e";
-const GOLD = "#9c7b2e";
+// 把 (mode, stage, thresh) 映射成当前要显示的一帧：动作卡 / 观察卡 / 错误数 / 链路状态
+function buildView(mode, stage, thresh) {
+  const s = Math.min(5, Math.max(0, stage));
+
+  if (mode === "recover") {
+    // 真实三步：缺参数→改判→final。错误只在第①步出现一次。
+    const stepIdx = s <= 2 ? 0 : s <= 4 ? 1 : 2;
+    const step = RECOVER[stepIdx];
+    const errCount = s >= 2 ? 1 : 0; // ③之后 error_count=1
+    return {
+      action: step.action,
+      obs: step.obs,
+      isErr: step.err,
+      errCount,
+      reinjected: s >= 3,          // ④之后错误已回注
+      revised: stepIdx >= 1,       // 已改判到 search_text
+      done: stepIdx >= 2,
+      chain: "alive",
+      stopped: false,
+      note: stepIdx === 0 ? "缺 path → validation_error" : stepIdx === 1 ? "改用 search_text，参数齐全 → ok" : "final · status=done",
+    };
+  }
+
+  if (mode === "fail") {
+    // 错误不结构化、不回注：模型看不到错误，链路当场断开
+    const step = RECOVER[0];
+    return {
+      action: step.action,
+      obs: s >= 1 ? "Traceback: KeyError 'path'  (错误只打印, 未回注)" : step.action,
+      isErr: s >= 1,
+      errCount: 0,                 // 没人计数
+      reinjected: false,
+      revised: false,
+      done: false,
+      chain: s >= 1 ? "broken" : "alive",
+      stopped: false,
+      note: s >= 1 ? "错误没进 context → 模型无从改判 → 链路中断" : "首个 action 已发出",
+    };
+  }
+
+  // loop：错误结构化回注了，但没有阈值止损 → error_count 无界累积
+  const errCount = Math.min(LOOP.length, s + 1); // 每过一步又错一次
+  const exceeded = errCount > thresh;
+  const stopped = exceeded; // ⑥若有阈值, 此刻本该 stop；loop 模式形象化"早该停了"
+  return {
+    action: LOOP[Math.min(LOOP.length - 1, s)],
+    obs: '{"ok":false,"error_type":"file_not_found","error":"no such file"}',
+    isErr: true,
+    errCount,
+    reinjected: true,
+    revised: true,          // 模型确实在改，只是越改越偏
+    done: false,
+    chain: "alive",
+    stopped,
+    note: exceeded
+      ? `error_count=${errCount} 已超阈值 ${thresh}：本应 stop()/求助，却仍在重试`
+      : `第 ${errCount} 次重试：换个路径再试，仍失败`,
+  };
+}
+
+function ActionCard({ x, y, w, text, isErr, label, dim }) {
+  return (
+    <g opacity={dim ? 0.4 : 1}>
+      <rect x={x} y={y} width={w} height="30" rx="5"
+        fill={isErr ? "rgba(158,43,30,0.08)" : "#fbf6ea"}
+        stroke={isErr ? ERR : "#cdb98e"} strokeWidth={isErr ? 1.4 : 1} />
+      <text x={x + 8} y={y + 12} fill={isErr ? ERR : "#8a7656"} fontSize="7.6" fontWeight="600">{label}</text>
+      <text x={x + 8} y={y + 24} fill="#5a4a36" fontSize="6.6">
+        {text.length > 58 ? text.slice(0, 57) + "…" : text}
+      </text>
+    </g>
+  );
+}
+
+// 反馈可靠性阶梯：环境 > verifier > 自评。高亮当前这条 obs 属于哪一档
+function FeedbackLadder({ active }) {
+  const rungs = [
+    { key: "env", label: "环境反馈", sub: "工具/测试/FS", color: OK, rank: "最可靠" },
+    { key: "verifier", label: "verifier", sub: "规则/评估器", color: GOLD, rank: "次之" },
+    { key: "self", label: "自评", sub: "模型自我批评", color: SUB, rank: "最弱" },
+  ];
+  return (
+    <g>
+      <text x="16" y="180" fill="#5a4a36" fontSize="8.4" fontWeight="600">反馈可靠性阶梯</text>
+      {rungs.map((r, i) => {
+        const y = 188 + i * 26;
+        const on = r.key === active;
+        return (
+          <g key={r.key}>
+            <rect x="16" y={y} width="150" height="22" rx="4"
+              fill={on ? r.color : "#f4ead7"} opacity={on ? 0.92 : 1}
+              stroke={on ? r.color : "#cdb98e"} strokeWidth={on ? 1.6 : 1} />
+            <text x="24" y={y + 14} fill={on ? "#fff" : "#8a7656"} fontSize="8.2" fontWeight={on ? "700" : "400"}>
+              {r.label}
+            </text>
+            <text x="104" y={y + 14} fill={on ? "rgba(255,255,255,0.85)" : "#b8a888"} fontSize="6.6">{r.sub}</text>
+            <text x="162" y={y + 14} fill={on ? "#fff" : "#b8a888"} fontSize="6.4" textAnchor="end">{r.rank}</text>
+          </g>
+        );
+      })}
+    </g>
+  );
+}
 
 function Viz({ derived: d, stage }) {
-  const recover = d.mode === "recover";
-  // fail 模式：第1步失败后链路中断，后续步不展示进展
-  const idx = Math.min(STEPS.length - 1, Math.max(0, stage));
-  const shownIdx = recover ? idx : 0;
-  const s = STEPS[shownIdx];
-  const dead = !recover && idx > 0;          // fail 模式越过第1步 = 死路
-  const errCount = recover
-    ? (idx >= 0 ? 1 : 0)
-    : 1;
-  const obsColor = s.err ? ERR : OK;
-  const note = recover ? s.recoverNote : (dead ? "链路已断：错误只被打印，没有回注，模型拿不到修正信号。" : s.failNote);
+  const v = buildView(d.mode, stage, d.thresh);
+
+  // 重试预算计：error_count / (thresh) 连续映射；超阈值变红
+  const gaugeMax = Math.max(5, d.thresh + 2);
+  const trackW = 150;
+  const fillW = Math.max(2, Math.min(1, v.errCount / gaugeMax) * trackW);
+  const threshX = (d.thresh / gaugeMax) * trackW;
+  const exceeded = v.errCount > d.thresh;
+  const gColor = exceeded ? ERR : v.errCount === 0 ? OK : v.errCount >= d.thresh ? GOLD : OK;
+  const budgetText = v.errCount === 0
+    ? "预算未动"
+    : exceeded
+      ? (d.mode === "loop" ? "超支仍在重试 · 失控" : "已触阈值 · 该止损")
+      : `已用 ${v.errCount}/${d.thresh}`;
+
+  // 当前 obs 属于哪一档反馈：错误/成功的 observation 都来自环境(工具)
+  const ladderActive = "env";
+
+  // 链路箭头颜色：recover 回注=绿虚线；fail 断裂=红X；loop 回注但失控=金虚线
+  const arrowColor = v.chain === "broken" ? ERR : d.mode === "loop" ? GOLD : OK;
 
   return (
     <svg viewBox="0 0 360 300" width="360" height="300">
-      <text x="16" y="14" fill="#5a4a36" fontSize="10.5">
-        失败恢复 · {MODES[d.modeIndex].label}{recover ? ` · 第 ${idx + 1}/3 步` : ""}
+      <text x="16" y="15" fill="#5a4a36" fontSize="10.5">
+        失败恢复闭环 · {MODES[d.modeIndex].label}
       </text>
 
-      {/* 当前 action 卡 */}
-      <rect x="16" y="24" width="328" height="46" rx="7"
-        fill="#fff6e9" stroke={GOLD} strokeWidth="1.3" />
-      <text x="26" y="40" fill={GOLD} fontSize="10" fontWeight="600">{s.label}</text>
-      <foreignObject x="26" y="44" width="308" height="24">
-        <div xmlns="http://www.w3.org/1999/xhtml" style={{
-          fontFamily: "ui-monospace, Menlo, monospace", fontSize: "8.6px",
-          lineHeight: "1.35", color: "#5a4a36", wordBreak: "break-all",
-        }}>{s.action}</div>
-      </foreignObject>
+      {/* 动作卡 → 观察卡 */}
+      <ActionCard x={16} y={26} w={328} text={v.action} isErr={false} label="model action" />
+      <ActionCard x={16} y={62} w={328} text={v.obs} isErr={v.isErr}
+        label={v.isErr ? "observation · ERROR" : "observation · ok"} />
 
-      {/* 向下箭头 */}
-      <line x1="180" y1="70" x2="180" y2="86" stroke={obsColor} strokeWidth="1.4" />
-      <path d={`M176 82 L180 88 L184 82`} fill="none" stroke={obsColor} strokeWidth="1.4" />
-
-      {/* observation 卡 */}
-      <rect x="16" y="90" width="328" height="50" rx="7"
-        fill={s.err ? "rgba(158,43,30,0.06)" : "rgba(63,107,79,0.06)"}
-        stroke={obsColor} strokeWidth="1.4" />
-      <text x="26" y="106" fill={obsColor} fontSize="10" fontWeight="600">
-        observation · {s.err ? "ok:false（错误）" : "ok:true / done"}
+      {/* 回注/改判链路 */}
+      <text x="24" y="112" fill={arrowColor} fontSize="8" fontWeight="600">
+        {v.chain === "broken"
+          ? "✗ 错误未回注 → 链路中断"
+          : v.reinjected
+            ? (d.mode === "loop" ? "↻ 结构化回注(但无止损) → 模型反复改判" : "↻ 结构化错误回注 context → 模型改判")
+            : "→ 等待 observation 回注"}
       </text>
-      <foreignObject x="26" y="110" width="308" height="28">
-        <div xmlns="http://www.w3.org/1999/xhtml" style={{
-          fontFamily: "ui-monospace, Menlo, monospace", fontSize: "8.2px",
-          lineHeight: "1.35", color: "#2b2117", wordBreak: "break-all",
-        }}>{s.obs}</div>
-      </foreignObject>
-
-      {/* 恢复回路：错误 -> 回注 -> 改判 */}
-      {s.err && (
-        recover ? (
-          <g>
-            <path d="M16 115 C 6 115 6 50 16 50" fill="none" stroke={ERR}
-              strokeWidth="1.5" strokeDasharray="4 3" />
-            <path d="M12 56 L16 48 L20 56" fill="none" stroke={ERR} strokeWidth="1.5" />
-            <text x="8" y="86" fill={ERR} fontSize="8.4" transform="rotate(-90 8 86)">
-              结构化回注 → 改判
-            </text>
-          </g>
-        ) : (
-          <g>
-            <line x1="150" y1="150" x2="210" y2="178" stroke={ERR} strokeWidth="2" />
-            <line x1="210" y1="150" x2="150" y2="178" stroke={ERR} strokeWidth="2" />
-            <text x="220" y="168" fill={ERR} fontSize="10" fontWeight="700">链路中断</text>
-          </g>
-        )
+      <path d={`M168 118 C${v.chain === "broken" ? "168 118 168 118 168 118" : "210 134 126 134 168 118"}`}
+        fill="none" stroke={arrowColor} strokeWidth="1.4"
+        strokeDasharray={v.chain === "broken" ? "0" : "3 3"} />
+      {v.chain === "broken" && (
+        <text x="300" y="112" fill={ERR} fontSize="9" fontWeight="700" textAnchor="end">✗</text>
+      )}
+      {v.revised && v.chain !== "broken" && (
+        <text x="328" y="112" fill={arrowColor} fontSize="7" textAnchor="end">
+          {v.done ? "→ final ✓" : d.mode === "loop" ? "→ 又一条错路径" : "→ 改用 search_text"}
+        </text>
       )}
 
-      {/* 下半：结果区 */}
-      {recover && idx >= 1 && (
-        <foreignObject x="16" y="156" width="328" height="40">
-          <div xmlns="http://www.w3.org/1999/xhtml" style={{
-            fontFamily: "var(--serif)", fontSize: "9.6px",
-            lineHeight: "1.45", color: "#8a7656",
-          }}>↳ {note}</div>
-        </foreignObject>
-      )}
-      {(!recover || idx === 0) && (
-        <foreignObject x="16" y="190" width="328" height="40">
-          <div xmlns="http://www.w3.org/1999/xhtml" style={{
-            fontFamily: "var(--serif)", fontSize: "9.6px",
-            lineHeight: "1.45", color: "#8a7656",
-          }}>↳ {note}</div>
-        </foreignObject>
-      )}
+      <text x="24" y="132" fill="#8a7656" fontSize="7.4">{v.note}</text>
 
-      {/* error_count 计数器 + 阈值 */}
-      <text x="16" y="250" fill="#5a4a36" fontSize="9.5">state.error_count：</text>
-      {[0, 1, 2].map((i) => (
-        <rect key={i} x={120 + i * 16} y={242} width="12" height="12" rx="2"
-          fill={i < errCount ? ERR : "#ece2cc"}
-          stroke={i === 2 ? ERR : "#cdb98e"} strokeWidth={i === 2 ? 1.2 : 0.8}
-          strokeDasharray={i === 2 ? "2 2" : "none"} />
-      ))}
-      <text x="176" y="251" fill="#a8946a" fontSize="8.2">超阈值即停止，防无限重试</text>
+      <line x1="16" y1="144" x2="344" y2="144" stroke="#e3d6b8" strokeWidth="1" />
 
-      <text x="16" y="282" fill={recover ? OK : ERR} fontSize="9.5">
-        {recover
-          ? "错误→结构化回注→改判→成功：失败成了下一步的决策信号。"
-          : "只打印错误：模型拿不到修正信号，一步错→一路断。"}
+      {/* 左下：反馈可靠性阶梯 */}
+      <FeedbackLadder active={ladderActive} />
+
+      {/* 右下：重试预算计 */}
+      <text x="190" y="180" fill="#5a4a36" fontSize="8.4" fontWeight="600">重试预算计 (error_count vs 阈值)</text>
+      <rect x="190" y="190" width="154" height="76" rx="6"
+        fill={exceeded ? "rgba(158,43,30,0.07)" : "#fbf6ea"}
+        stroke={gColor} strokeWidth={exceeded ? 1.6 : 1} />
+      <text x="198" y="206" fill={gColor} fontSize="8.6" fontWeight="600">error_count</text>
+      <text x="336" y="206" fill={gColor} fontSize="9" textAnchor="end" fontWeight="700">{v.errCount}</text>
+      <rect x="198" y="214" width={trackW} height="9" rx="2" fill="#efe3cc" />
+      <rect x="198" y="214" width={fillW} height="9" rx="2" fill={gColor} opacity="0.85" />
+      <line x1={198 + threshX} y1="210" x2={198 + threshX} y2="227" stroke="#6b3a2e" strokeWidth="1.2" strokeDasharray="2 2" />
+      <text x={198 + threshX} y="236" fill="#6b3a2e" fontSize="6.6" textAnchor="middle">阈值 {d.thresh}</text>
+      <text x="198" y="252" fill={gColor} fontSize="7.6" fontWeight="600">{budgetText}</text>
+      <text x="198" y="262" fill="#a8946a" fontSize="6.6">
+        {d.mode === "fail" ? "无人计数 → 失败被吞" : d.mode === "loop" ? "无 ⑥ 止损 → 无界累积" : "计数+止损 → 有界恢复"}
+      </text>
+
+      <text x="16" y="294" fill="#a8946a" fontSize="7">
+        Reflexion: 失败→语言总结→回灌 · Self-Refine: 自评有幻觉风险 · LATS: 树搜索更强但更贵
       </text>
     </svg>
   );
 }
 
 function frames(params, d) {
-  const recover = d.mode === "recover";
-  return [
-    { line: 1, stage: 0, say: recover
-        ? `第 1 步：模型调 <code>read_file</code> 但<b>漏了必填 path</b>。harness 执行后得到 <b>ok:false</b> 的 observation——这是<b>环境反馈</b>，最可靠的一类。`
-        : `第 1 步：模型调 <code>read_file</code> 漏了 path。这一版 harness 只把错误<b>打印</b>出来，不回注。` },
-    { line: 2, stage: 1, say: `<code>observation_has_error</code> 判断 <code>ok is False</code>。<b>反馈不等于模型自言自语</b>：环境反馈 &gt; verifier &gt; 纯自评，这里是最硬的环境反馈。` },
-    { line: 3, stage: 2, say: recover
-        ? `<code>error_count += 1</code>。state 记录失败次数，既用于<b>防无限重试</b>，也是 <a href="${REFLEXION_URL}" target="_blank" rel="noreferrer">Reflexion</a> 式“把失败变经验”的最小雏形。`
-        : `打印模式下没有 error_count、没有回注。错误信息<b>丢失</b>，模型下一轮看不到它，<b>无从修正</b>。` },
-    { line: 4, stage: 3, say: recover
-        ? `关键一步：错误<b>结构化回注进 context</b>。模型这才“看见”自己缺了 path——<code>tool error → observation → 模型看到 → 修正 action</code>。`
-        : `<b>链路中断</b>：错误没有进入下一轮 context。这正是“打印即失败”和“可恢复 agent”的分界。` },
-    { line: 5, stage: recover ? 4 : 3, say: recover
-        ? `第 2 步：模型读到「缺 path」，<b>改用带完整参数的 search_text</b>，成功取证。失败成了有用的决策信号，而非终点。`
-        : `没有回注就没有改判。Reflexion / Self-Refine / LATS 再强，也都建立在“反馈能回到下一步”这个前提上。` },
-    { line: 6, stage: 5, say: recover
-        ? `第 3 步 <code>final</code>，<code>error_count=1</code>、status=done。若失败反复累积超阈值，harness 会<b>停止或求助用户</b>，而不是无限重试。`
-        : `兜底：即便可恢复，也要设失败阈值。<a href="${LATS_URL}" target="_blank" rel="noreferrer">LATS</a> 这类多路径探索更强但更贵，必须和预算一起看。` },
-  ];
+  const m = d.mode;
+  return [0, 1, 2, 3, 4, 5].map((stage) => {
+    const v = buildView(m, stage, d.thresh);
+    let say;
+    if (stage === 0) {
+      say = `第 1 步·<b>run_tool</b>：模型发出 action，harness 执行后拿回 observation。${m === "recover" ? "这一步故意漏写 <code>path</code>。" : m === "fail" ? "同样漏写 <code>path</code>，但稍后看 harness 怎么处理它。" : "这条路径不存在。"}`;
+    } else if (stage === 1) {
+      say = m === "fail"
+        ? "第 2 步·<b>判定失败</b>：fail 模式把异常直接抛/打印，<b>没有</b>把它变成结构化 observation。模型下一轮根本看不到错误。"
+        : `第 2 步·<b>observation_has_error</b>：harness 识别出这是错误（<code>${v.isErr ? "error_type" : "ok"}</code>），它是<b>环境反馈</b>——三类反馈里最可靠的一档。`;
+    } else if (stage === 2) {
+      say = m === "fail"
+        ? "第 3 步：没人给错误计数。失败被吞掉，<b>error_count 始终为 0</b>，harness 以为一切正常。"
+        : `第 3 步·<b>error_count += 1</b>：错误次数写进 <code>state.json</code>。这是后面止损的依据${m === "loop" ? "——但 loop 模式偏偏不看它。" : "。"}`;
+    } else if (stage === 3) {
+      say = m === "fail"
+        ? "第 4 步：本该把结构化错误回注 context，fail 模式跳过了这步。<b>链路在此断开</b>。"
+        : `第 4 步·<b>结构化回注</b>：把 <code>{"{ok:false,error_type:...}"}</code> 追加进 context。模型这才<b>看得见</b>自己错在哪。${m === "loop" ? "loop 也回注了，所以它能改——问题不在这。" : ""}`;
+    } else if (stage === 4) {
+      say = m === "fail"
+        ? "第 5 步：模型拿不到错误，只能凭空再猜，<b>无从改判</b>。这就是“只打印不回注”的代价。"
+        : m === "loop"
+          ? "第 5 步·<b>模型改判</b>：loop 模式里模型确实在改——可它换的还是错路径，<b>越改越偏</b>（Self-Refine 的自洽幻觉风险）。"
+          : "第 5 步·<b>模型改判</b>：基于回注的错误，模型改用参数齐全的 <code>search_text</code>，这次成功。";
+    } else {
+      say = m === "fail"
+        ? "第 6 步：fail 模式连 error_count 都没有，阈值形同虚设。失败既不可见也不可控。"
+        : m === "loop"
+          ? `第 6 步·<b>关键缺失</b>：loop 没有 <code>if error_count > ${d.thresh}: stop()</code>。error_count 已 ${v.errCount}，<b>超阈值仍在重试</b>——拖动「阈值」朱字看红线何时被突破。`
+          : `第 6 步·<b>止损</b>：recover 一次就修好了，error_count=1 远低于阈值 ${d.thresh}。若反复失败超阈值，<code>stop()</code> 会触发求助。`;
+    }
+    return { line: stage + 1, stage, say };
+  });
 }
 
 function note(stage, params, d) {
   switch (stage) {
     case 0:
-      return "本章主线：让失败变成<b>下一步可用的决策信号</b>。<a href=\"" + REFLEXION_URL + "\" target=\"_blank\" rel=\"noreferrer\">Reflexion</a> 把失败总结成经验、<a href=\"" + SELF_REFINE_URL + "\" target=\"_blank\" rel=\"noreferrer\">Self-Refine</a> 生成-自评-修改、<a href=\"" + LATS_URL + "\" target=\"_blank\" rel=\"noreferrer\">LATS</a> 把行动空间当搜索树。";
+      return "本式的主角不是“模型会反思”，而是 <b>harness 怎么把一次失败变成下一步可用的信号</b>。先看一条 action 执行后拿回 observation。";
     case 1:
-      return "<b>三类反馈</b>：环境反馈（工具/测试/文件系统，最可靠）、verifier 反馈（规则/测试器/另一模型）、自我反馈（模型自评，不能替代事实验证）。本例 ok:false 属于<b>环境反馈</b>。";
+      return `<b>observation_has_error()</b> 是恢复闭环的第一道闸：它把工具返回判成成功还是错误。错误来自<b>环境</b>（工具/测试/文件系统），是三类反馈里最可靠的——见 <a href="${REFLEXION_URL}" target="_blank" rel="noreferrer">Reflexion</a>。`;
     case 2:
-      return "<b>Reflexion</b> 的工程雏形：失败不立刻改参数，而是把失败信息留存（这里是 error_count + trace）。可多次尝试、有明确成败信号的任务最适合。";
+      return "<b>error_count</b> 写进 state.json，是“失败可计量”的前提。没有计数，就没有止损的依据，agent 要么被一次失败卡死，要么无限重试。";
     case 3:
-      return "可恢复 agent 的硬要求：<b>错误必须结构化、必须进入下一轮 context</b>。只 print 不回注，模型就拿不到修正信号——这也是 ch02 结构化 observation 的用武之地。";
+      return "<b>结构化回注</b>是 recover 与 fail 的真正分水岭：错误必须以结构化 observation 进入下一轮 context，模型才看得见、才改得动。只打印到日志等于没发生。";
     case 4:
-      return "<b>Self-Refine</b> 是“生成→自评→修改”的自我编辑循环，适合写作/总结/草稿代码；但<b>自评不等于正确</b>，无外部验证时容易越改越偏、形成自洽幻觉。";
+      return `模型改判靠的是<b>回注的证据</b>，不是凭空再想一遍。<a href="${SELF_REFINE_URL}" target="_blank" rel="noreferrer">Self-Refine</a> 的自评循环若没有外部反馈支撑，容易“越改越偏”形成自洽幻觉——loop 模式正演示这点。`;
     case 5:
-      return "<b>LATS</b> 把“下一步做什么”变成树搜索（候选行动→observation→打分→选择/回溯），降低单路径错误风险，但模型调用、工具调用、状态管理成本都上升，<b>必须配 max branches / depth / budget</b>。";
+      return `<b>止损阈值</b>是工程上的安全带：<code>if error_count > N: stop()/求助</code>。<a href="${LATS_URL}" target="_blank" rel="noreferrer">LATS</a> 这类树搜索更强但更贵，同样必须和预算/阈值一起用，否则会烧光 token。`;
     default:
-      return "拖朱字对比「打印即失败 / 结构化回注修正」，点演法走 recover 三步。";
+      return "拖朱字切换三种失败处理：结构化回注修正 / 打印即失败 / 回注但无阈值；再拖「阈值」看重试预算计何时触红线。";
   }
 }
 
-const pyCode = `# agent.py · 失败恢复（recover 场景实跑）
-obs = run_tool(name, args)                 # 第1步: read_file 缺 path
-if observation_has_error(obs):             # ok:false ?
-    state["error_count"] += 1              # 记录失败次数
-messages += structured_obs(obs)            # 错误也回注 context
-# 模型读到 "missing path" -> 改用 search_text(带完整参数)  第2步
-# observation 足够 -> final                                第3步
-if state["error_count"] > THRESHOLD:       # 防无限重试
-    stop("too_many_errors")
-# 关键: 失败被回注成下一步的决策信号, 而不是直接中断`;
+const pyCode = `# 失败恢复闭环：harness 把环境反馈变成下一步决策信号
+def step(action, state, ctx, thresh):
+    obs = run_tool(action)                      # 执行工具
+    if observation_has_error(obs):              # ②环境反馈最可靠
+        state.error_count += 1                  # ③写进 state.json
+        ctx.append(structured(obs))             # ④结构化回注(关键)
+        if state.error_count > thresh:          # ⑥止损/求助
+            return stop("repeated failures")
+    return model(ctx)                           # ⑤据错误改判
+
+# 反差三态:
+#   recover: 计数+回注+止损 → 一次就修好(error_count=1)
+#   fail:    只打印不回注    → 模型看不到错, 链路断, error_count=0
+#   loop:    回注但无 ⑥     → 越改越偏, error_count 无界累积`;
 
 export const reflexionDemo = {
   title: "演武场 · 失败恢复闭环",
-  intro: `<p>本式从三篇论文起手：<b><a href="${REFLEXION_URL}" target="_blank" rel="noreferrer">Reflexion</a></b>（失败后用语言总结经验、下次回灌）、<b><a href="${SELF_REFINE_URL}" target="_blank" rel="noreferrer">Self-Refine</a></b>（生成→自评→修改的迭代）、<b><a href="${LATS_URL}" target="_blank" rel="noreferrer">LATS</a></b>（把推理-行动-规划统一成树搜索）。它们共同回答：agent 如何<b>利用反馈改进下一步</b>。</p>
-<p>前三式搭好了 loop、工具层和状态分流。本式补上让 agent 真正“能修正”的机制：<b>action → 错误/反馈 → 修订计划 → 下一步</b>。</p>
-<p><b>核心判断</b>：关键不是“模型会反思”，而是 harness 能把<b>环境反馈、错误、验证结果</b>变成下一步可用的决策信号。失败若只被打印，链路就断了；失败若被<b>结构化回注</b>，模型才能改判。</p>
-<p><b>三类反馈可靠性</b>：环境反馈（工具/测试）&gt; verifier 反馈 &gt; 纯自我反馈。自评不能替代外部验证。</p>
-<p class="intro-arena-tip">右侧演武场用实验的 recover 场景（缺参数失败→改判→成功，输出取自实跑 <code>agent.py</code>）。拖 <b>朱字</b>对比「打印即失败 / 结构化回注修正」，点演法走三步。</p>`,
+  intro: `<p>本式从三篇论文起手：<b><a href="${REFLEXION_URL}" target="_blank" rel="noreferrer">Reflexion</a></b>（失败→语言总结→回灌成经验）、<b><a href="${SELF_REFINE_URL}" target="_blank" rel="noreferrer">Self-Refine</a></b>（生成→自评→修改，但无外部验证易自洽幻觉）、<b><a href="${LATS_URL}" target="_blank" rel="noreferrer">LATS</a></b>（把行动空间当搜索树，更强但更贵）。</p>
+<p><b>心法</b>：feedback-driven agent 的关键<b>不是“模型会反思”</b>，而是 <b>harness 能把环境反馈、错误、验证结果变成下一步可用的决策信号</b>。一次工具错误要走完：判错 → 计数 → 结构化回注 → 模型改判 → 超阈止损。</p>
+<p><b>三类反馈按可靠性排序</b>：环境反馈（工具/测试/文件系统，最可靠）> verifier/critic（规则或评估器）> 自评（模型批评自己，最弱、可能幻觉）。recover 用的正是最可靠的环境反馈。</p>
+<p class="intro-arena-tip">右侧演武场用 agent.py 的真实 recover 三步打底。拖 <b>朱字</b>切换「结构化回注修正 / 打印即失败 / 回注但无阈值」，再拖<b>阈值</b>，看<b>重试预算计</b>里 error_count 如何逼近并突破红线——这就是“只打印不回注”和“回注却不止损”各自的失败形态。</p>`,
   bridge: {
-    prev: "第三式：信息分流 —— context / state / memory / trace。",
-    current: "第四式：失败恢复闭环 —— 反馈/错误/验证变成下一步决策信号。",
-    next: "第五式：子代理与任务分解（sub-agent / orchestration）。",
+    prev: "第三式：长任务信息分拣 —— context / state / memory / trace 各司其职。",
+    current: "第四式：失败恢复闭环 —— 环境反馈结构化回注，计数并按阈值止损。",
+    next: "第五式：分而委之 —— 主 agent 把子任务委派给 sub-agent。",
     sources: ["Reflexion", "Self-Refine", "LATS"],
   },
   lines,
@@ -237,12 +344,12 @@ export const reflexionDemo = {
   pyCode,
   playMs: 1450,
   terms: [
-    { t: "ReAct", d: "边想边行动，用 observation 更新下一步。本卷第一式的最小闭环，但它不保证每步都对、不保证从错误中学习。" },
-    { t: "Reflexion", d: "失败后用语言把原因总结成经验，下次尝试回灌。适合可多次尝试、有明确成败信号的任务。需真实反馈支撑，否则只是自言自语。" },
-    { t: "Self-Refine", d: "生成→自评→修改的自我编辑循环，适合写作/总结/草稿代码。风险：自评不等于正确，无外部验证时易越改越偏。" },
-    { t: "LATS", d: "把行动空间当搜索树：候选行动→observation→打分→选择/回溯。降低单路径错误风险，但成本显著上升，必须配预算上限。" },
-    { t: "三类反馈", d: "环境反馈（工具/测试/文件系统，最可靠）、verifier 反馈（规则/测试器/另一模型）、自我反馈（模型自评，不替代事实验证）。" },
-    { t: "error_count", d: "state 中记录的失败次数。既是 Reflexion 式“留存失败”的雏形，也用于设阈值防无限重试。" },
+    { t: "observation_has_error", d: "harness 判定工具返回是成功还是错误的闸门。错误必须被识别，才能进入回注与计数。" },
+    { t: "结构化回注", d: "把错误以 {ok:false,error_type,error} 这种结构化 observation 追加进下一轮 context，让模型看得见、改得动。只打印到日志等于没发生。" },
+    { t: "error_count", d: "state.json 中的失败计数。是止损阈值的依据；没有它就无法防无限重试。" },
+    { t: "止损阈值", d: "if error_count > N: stop()/求助。工程安全带，防止 agent 在同一个坑里无限打转烧 token。" },
+    { t: "三类反馈", d: "环境反馈(工具/测试/FS,最可靠) > verifier/critic(规则或评估器) > 自评(模型自我批评,最弱,无外部验证易自洽幻觉)。" },
+    { t: "自洽幻觉", d: "Self-Refine 风险：模型自评自改但没有外部事实校验时，可能越改越偏却自我感觉良好。loop 模式形象化这点。" },
   ],
   localCmd: "cd agent-volume/experiments/minimal-harness && python3 agent.py \"演示失败后恢复\" --scripted-demo --scripted-scenario recover --reset-trace --reset-state",
 };

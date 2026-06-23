@@ -53,13 +53,13 @@ const EVENTS = [
 ];
 
 const lines = [
-  { text: "{{mode}}", stage: 0 },
-  { text: "next()", stage: 0 },
-  { text: "now>ctx", stage: 1 },
-  { text: "big>sum", stage: 3 },
-  { text: "prog>st", stage: 4 },
-  { text: "reuse>mem", stage: 5 },
-  { text: "audit>log", stage: 6 },
+  { text: 'route(sys+tools, by={{mode}})  # ①底座: 每轮进 context, 不落 state/memory', stage: 0 },
+  { text: 'route(goal)                    # ②任务: 进 context 决策 + state.current_task', stage: 1 },
+  { text: 'route(action)                  # ③动作: 进 context + trace, 不进 memory', stage: 2 },
+  { text: 'route(big_obs)                 # ④大输出: 摘要进 context/state, 全文只进 trace', stage: 3 },
+  { text: 'route(error)                   # ⑤错误: 进 context 修正 + state.error_count + trace', stage: 4 },
+  { text: 'route(skill)                   # ⑥可复用: 跨任务进 memory (Voyager skill)', stage: 5 },
+  { text: 'route(final)                   # ⑦终帧: 覆盖 state.final_answer, trace 追加', stage: 6 },
 ];
 
 const paramDefs = { mode: { min: 0, max: 2, step: 1, fmt: (v) => MODES[v].label } };
@@ -139,6 +139,40 @@ function buildStores(mode, stage) {
   };
 }
 
+// 每条信息若进 context 的 token 成本：原始 vs 摘要。大 observation 全文最贵。
+const TOK = { sys: 6, task: 4, act: 4, obsRaw: 42, obsSum: 5, err: 4, final: 5 };
+const CTX_LIMIT = 50;
+const tokOf = (tag, raw) =>
+  tag === "task" ? TOK.task : tag === "act" ? TOK.act :
+  tag === "err" ? TOK.err : tag === "final" ? TOK.final :
+  tag === "obs!" ? (raw ? TOK.obsRaw : TOK.obsSum) : 0;
+
+// 上下文窗口压力：合理分流(滑窗+摘要,有界) / 全塞(全文累积,撑爆) / 只留trace(只剩初始,过少)
+function ctxTokens(mode, stage) {
+  const seen = upto(stage).filter((e) => e.needNow);
+  if (mode === "traceOnly") return TOK.sys + TOK.task;
+  if (mode === "dump") return seen.reduce((t, e) => t + tokOf(e.tag, true), TOK.sys);
+  return seen.slice(-3).reduce((t, e) => t + tokOf(e.tag, false), TOK.sys);
+}
+
+// 当前 state.json 快照：字段随事件逐条累积，状态 new→running→done(字段名与 README/agent.py 一致)
+function buildState(mode, stage) {
+  if (mode === "traceOnly") return { entries: [], status: null, recoverable: false };
+  const seen = upto(stage);
+  const steps = seen.filter((e) => e.progress).length;
+  let status = stage >= 1 ? "running" : "new";
+  let lastAction = stage >= 2 ? "read_file" : null;
+  if (stage >= 6) { status = "done"; lastAction = "final"; }
+  const entries = [];
+  if (stage >= 1) entries.push(["current_task", "Phase01 总结"], ["steps", String(steps)]);
+  if (lastAction) entries.push(["last_action", lastAction]);
+  if (stage >= 3) entries.push(["last_obs_sum", "roadmap·摘要"]);
+  if (stage >= 4) entries.push(["error_count", "1"]);
+  if (stage >= 6) entries.push(["final_answer", "三段总结"]);
+  if (stage >= 0) entries.push(["status", status]);
+  return { entries, status, recoverable: true };
+}
+
 function GatePanel({ event }) {
   return (
     <g>
@@ -201,10 +235,57 @@ function StoreBox({ x, y, title, sub, color, items, status, warn }) {
   );
 }
 
+function StateBox({ x, y, w, h, entries, hotKeys, recoverable }) {
+  return (
+    <g>
+      <rect x={x} y={y} width={w} height={h} rx="5"
+        fill={recoverable ? "#fbf6ea" : "rgba(158,43,30,0.06)"}
+        stroke={recoverable ? COLOR.state : "#9e2b1e"} strokeWidth="1" />
+      <text x={x + 8} y={y + 13} fill={recoverable ? COLOR.state : "#9e2b1e"} fontSize="9.7" fontWeight="600">state.json</text>
+      <text x={x + 78} y={y + 13} fill="#a8946a" fontSize="7.3">当前快照 · 覆盖式</text>
+      {!recoverable ? (
+        <text x={x + 8} y={y + 36} fill="#9e2b1e" fontSize="8.4">{"{ }  ← 空快照, 无状态可恢复"}</text>
+      ) : entries.map(([k, v], i) => {
+        const col = i % 2, row = Math.floor(i / 2);
+        const ex = x + 8 + col * 80, ey = y + 23 + row * 13;
+        const hot = hotKeys.includes(k);
+        return (
+          <text key={k} x={ex} y={ey + 7} fontSize="6.9"
+            fill={hot ? "#9e2b1e" : "#6b5636"} fontWeight={hot ? "700" : "400"}>
+            {hot ? "▸ " : ""}{k}: {v}
+          </text>
+        );
+      })}
+    </g>
+  );
+}
+
+const EXPLAIN = {
+  route: { accent: "#3f6b4f", lines: ["合理分流: 滑窗 + 摘要", "context 有界 · state 可恢复", "memory 只收经验 · trace 全留"] },
+  dump: { accent: "#9e2b1e", lines: ["全塞 prompt: 全文累积回灌", "context 撑爆 · 目标/工具被挤掉", "→ 长任务污染上下文的典型失败"] },
+  traceOnly: { accent: "#9c7b2e", lines: ["只留 trace: 能审计能复盘", "但 state 空 · 无摘要可回灌", "→ 下一轮接不上, 等于重启"] },
+};
+
 function Viz({ derived: d, stage }) {
   const idx = Math.min(EVENTS.length - 1, Math.max(0, stage));
   const event = EVENTS[idx];
   const stores = buildStores(d.mode, idx);
+
+  const ctx = ctxTokens(d.mode, idx);
+  const ctxOver = ctx > CTX_LIMIT;
+  const meterMax = 64;
+  const trackW = 150;
+  const fillW = Math.max(2, Math.min(1, ctx / meterMax) * trackW);
+  const limitX = (CTX_LIMIT / meterMax) * trackW;
+  const ctxColor = ctxOver ? "#9e2b1e" : d.mode === "traceOnly" ? "#9c7b2e" : "#3f6b4f";
+  const ctxStatus = ctxOver ? "撑爆 · 目标被挤" : d.mode === "traceOnly" ? "过稀 · 难恢复" : "有界 · 清爽";
+
+  const st = buildState(d.mode, idx);
+  const prev = new Map(buildState(d.mode, idx - 1).entries);
+  const hotKeys = st.entries.filter(([k, v]) => prev.get(k) !== v).map(([k]) => k);
+
+  const ex = EXPLAIN[d.mode] || EXPLAIN.route;
+
   return (
     <svg viewBox="0 0 360 300" width="360" height="300">
       <text x="16" y="15" fill="#5a4a36" fontSize="10.5">
@@ -221,36 +302,37 @@ function Viz({ derived: d, stage }) {
 
       <GatePanel event={event} />
 
-      <path d="M154 139 C171 139 171 139 188 139" fill="none" stroke="#cdb98e" strokeWidth="1.5" />
-      <text x="171" y="132" fill="#a8946a" fontSize="8" textAnchor="middle">落盘/回灌</text>
+      <path d="M154 120 C171 120 171 120 188 120" fill="none" stroke="#cdb98e" strokeWidth="1.5" />
+      <text x="171" y="113" fill="#a8946a" fontSize="8" textAnchor="middle">落盘/回灌</text>
 
-      <StoreBox x={190} y={75} title="context" sub="工作台" color={COLOR.context}
-        items={stores.context} status={stores.contextStatus} warn={stores.contextOver} />
-      <StoreBox x={190} y={124} title="state.json" sub="当前快照" color={COLOR.state}
-        items={stores.state} status={d.mode === "traceOnly" ? "不可恢复" : "覆盖"} warn={d.mode === "traceOnly" && idx >= 3} />
-      <StoreBox x={190} y={173} title="memory" sub="经验库" color={COLOR.memory}
+      {/* context: 实时窗口压力计 (动态映射) */}
+      <rect x="190" y="70" width="168" height="44" rx="5"
+        fill={ctxOver ? "rgba(158,43,30,0.08)" : "#fbf6ea"}
+        stroke={ctxColor} strokeWidth={ctxOver ? 1.6 : 1} />
+      <text x="198" y="83" fill={COLOR.context} fontSize="9.7" fontWeight="600">context</text>
+      <text x="244" y="83" fill="#a8946a" fontSize="7.3">工作台 · 窗口压力</text>
+      <text x="350" y="83" fill={ctxColor} fontSize="7.2" textAnchor="end">{ctx}/{CTX_LIMIT} tok</text>
+      <rect x="198" y="90" width={trackW} height="8" rx="2" fill="#efe3cc" />
+      <rect x="198" y="90" width={fillW} height="8" rx="2" fill={ctxColor} opacity="0.85" />
+      <line x1={198 + limitX} y1="87" x2={198 + limitX} y2="101" stroke="#6b3a2e" strokeWidth="1" strokeDasharray="2 2" />
+      <text x="198" y="110" fill={ctxColor} fontSize="7.4">{ctxStatus}</text>
+
+      {/* state.json: 逐字段累积快照 (精准映射) */}
+      <StateBox x={190} y={118} w={168} h={72} entries={st.entries} hotKeys={hotKeys} recoverable={st.recoverable} />
+
+      <StoreBox x={190} y={194} title="memory" sub="经验库" color={COLOR.memory}
         items={stores.memory} status={stores.memory.length ? "提炼后" : "挑食"} />
-      <StoreBox x={190} y={222} title="trace.jsonl" sub="审计流水" color={COLOR.trace}
+      <StoreBox x={190} y={240} title="trace.jsonl" sub="审计流水" color={COLOR.trace}
         items={stores.trace} status="append" />
 
-      {d.mode === "dump" && stores.contextOver && (
-        <text x="18" y="251" fill="#9e2b1e" fontSize="9.4" fontWeight="600">
-          全塞后果：目标和工具规则被大输出挤掉，下一轮易跑偏。
-        </text>
-      )}
-      {d.mode === "traceOnly" && idx >= 3 && (
-        <text x="18" y="251" fill="#9e2b1e" fontSize="9.4" fontWeight="600">
-          只留 trace：能审计，但下一轮没有状态摘要可恢复。
-        </text>
-      )}
-      {d.mode === "route" && (
-        <text x="18" y="251" fill="#8a7656" fontSize="9.2">
-          合理分流：context 短、state 可恢复、memory 只收经验、trace 全留。
-        </text>
-      )}
+      {/* 左下: 当前策略后果 */}
+      {ex.lines.map((t, i) => (
+        <text key={i} x="18" y={216 + i * 13} fill={i === 0 ? ex.accent : "#8a7656"}
+          fontSize="7.8" fontWeight={i === 0 ? "600" : "400"}>{t}</text>
+      ))}
 
-      <text x="18" y="286" fill="#8a7656" fontSize="8.8">
-        Generative Agents: memory stream / reflection / planning · Voyager: skill library
+      <text x="18" y="294" fill="#a8946a" fontSize="7">
+        Generative Agents: memory stream · Voyager: skill library
       </text>
     </svg>
   );
